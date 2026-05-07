@@ -370,7 +370,7 @@
       // Workspaces
       html += `<h4 style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px">Workspaces</h4>`;
       html += workspaces.map(w => `<div class="config-item" style="cursor:pointer;${w.url===activeWorkspace?'border-color:var(--accent);background:var(--accent-soft)':''}" onclick="switchWorkspace('${w.url}')"><div style="width:8px;height:8px;border-radius:50%;background:${w.url===activeWorkspace?'var(--green)':'var(--text-dim)'};flex-shrink:0"></div><div class="info"><p>${w.name}</p><small>${w.url}</small></div><button class="del" onclick="event.stopPropagation();removeWorkspace('${w.url}')">×</button></div>`).join('');
-      html += `<button class="add-btn" onclick="addWorkspacePrompt()" style="margin-top:8px;padding:12px">+ Add PC</button>`;
+      html += `<button class="add-btn" onclick="scanForHosts()" style="margin-top:8px;padding:12px" id="scan-btn">🔍 Scan for PCs</button>`;
       // Theme
       html += `<h4 style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;margin-top:20px">Theme</h4><div class="theme-grid">`;
       html += themes.map(t => `<button class="theme-btn ${currentTheme===t.id?'active':''}" style="background:${t.color}" data-name="${t.name}" onclick="setTheme('${t.id}')"></button>`).join('');
@@ -394,6 +394,50 @@
       workspaces.push({ name, url });
       localStorage.setItem('deck-workspaces', JSON.stringify(workspaces));
       renderConfig();
+    }
+
+    async function scanForHosts() {
+      const btn = document.getElementById('scan-btn');
+      btn.textContent = 'Scanning...';
+      btn.style.opacity = '0.5';
+
+      // Get subnet from current connection
+      const parts = location.hostname.split('.');
+      const subnet = parts.slice(0, 3).join('.');
+      const found = [];
+
+      // Scan common IPs on port 4000
+      const promises = [];
+      for (let i = 1; i <= 254; i++) {
+        const ip = `${subnet}.${i}`;
+        const url = `http://${ip}:4000`;
+        if (workspaces.find(w => w.url === url)) continue;
+        promises.push(
+          fetch(`${url}/health`, { signal: AbortSignal.timeout(1500) })
+            .then(r => r.json())
+            .then(data => { if (data.status === 'ok') found.push({ ip, url, actions: data.actions }); })
+            .catch(() => {})
+        );
+      }
+
+      await Promise.all(promises);
+
+      if (found.length === 0) {
+        btn.textContent = 'No new PCs found';
+        setTimeout(() => { btn.textContent = '🔍 Scan for PCs'; btn.style.opacity = '1'; }, 2000);
+        return;
+      }
+
+      // Add found hosts
+      for (const h of found) {
+        const name = prompt(`Found Deck at ${h.ip} (${h.actions} actions). Name it:`, h.ip);
+        if (!name) continue;
+        workspaces.push({ name, url: h.url });
+      }
+      localStorage.setItem('deck-workspaces', JSON.stringify(workspaces));
+      btn.textContent = `Found ${found.length} PC(s)!`;
+      btn.style.opacity = '1';
+      setTimeout(() => renderConfig(), 1000);
     }
 
     function setTheme(id) { currentTheme = id; document.documentElement.dataset.theme = id; localStorage.setItem('deck-theme', id); renderConfig(); }
