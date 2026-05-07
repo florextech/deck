@@ -1,0 +1,25 @@
+{
+  "name": "open-deck",
+  "private": true,
+  "version": "0.1.0",
+  "description": "AI Command Center — Open Deck by Florex Labs",
+  "scripts": {
+    "dev": "concurrently -n server,web,agent -c blue,green,magenta \"pnpm dev:server\" \"pnpm dev:web\" \"pnpm dev:agent\"",
+    "dev:web": "pnpm --filter @open-deck/web dev",
+    "dev:server": "pnpm --filter @open-deck/server dev",
+    "dev:agent": "pnpm --filter @open-deck/agent dev",
+    "build": "pnpm -r build",
+    "lint": "pnpm -r lint",
+    "test": "vitest run",
+    "typecheck": "pnpm -r typecheck"
+  },
+  "engines": {
+    "node": ">=20",
+    "pnpm": ">=9"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1",
+    "typescript": "5.8.3",
+    "vitest": "3.1.3"
+  }
+}
