@@ -14,7 +14,7 @@ const socket = io(SERVER, { transports: ["websocket"], query: { role: "agent" } 
 socket.on("connect", () => {
   console.log("[agent] Connected ✓");
   notify("Agent connected", "success");
-  if (os === "darwin") startNotificationWatcher();
+  startNotificationWatcher();
 });
 socket.on("disconnect", () => console.log("[agent] Disconnected"));
 
@@ -127,50 +127,80 @@ function detectLinuxApps(): DetectedApp[] {
   ];
 }
 
-/* ─── macOS System Notification Watcher ─── */
-let lastNotifTimestamp = Date.now() * 1000000; // nanoseconds
+/* ─── System Notification Watcher ─── */
+let lastNotifTimestamp = Date.now() * 1000000;
 
 function startNotificationWatcher() {
+  if (os === "darwin") startMacWatcher();
+  else if (os === "win32") startWindowsWatcher();
+  else startLinuxWatcher();
+}
+
+function startMacWatcher() {
   const dbPath = `${homedir()}/Library/Group Containers/group.com.apple.usernoted/db2/db`;
   if (!existsSync(dbPath)) {
-    console.log("[agent] Notification DB not found, skipping watcher");
+    console.log("[agent] macOS notification DB not found");
     return;
   }
-
   console.log("[agent] Watching macOS notifications...");
 
   setInterval(() => {
     try {
-      const query = `SELECT rec.app_id, rec.delivered_date, attr.value 
-        FROM record AS rec 
-        JOIN attribute AS attr ON attr.record_id = rec.rec_id 
-        WHERE rec.delivered_date > ${lastNotifTimestamp / 1000000000} 
-        AND attr.key = 'titl'
-        ORDER BY rec.delivered_date DESC 
-        LIMIT 5;`;
-
-      const result = execSync(
-        `sqlite3 "${dbPath}" "${query}" 2>/dev/null`,
-        { encoding: "utf-8", timeout: 3000 }
-      ).trim();
-
+      const query = `SELECT rec.app_id, rec.delivered_date, attr.value FROM record AS rec JOIN attribute AS attr ON attr.record_id = rec.rec_id WHERE rec.delivered_date > ${lastNotifTimestamp / 1000000000} AND attr.key = 'titl' ORDER BY rec.delivered_date DESC LIMIT 5;`;
+      const result = execSync(`sqlite3 "${dbPath}" "${query}" 2>/dev/null`, { encoding: "utf-8", timeout: 3000 }).trim();
       if (!result) return;
-
-      const lines = result.split("\n");
-      for (const line of lines.reverse()) {
+      for (const line of result.split("\n").reverse()) {
         const parts = line.split("|");
         if (parts.length < 3) continue;
-        const appId = parts[0] ?? "";
+        const appName = (parts[0] ?? "").split(".").pop() ?? "";
         const title = parts[2] ?? "";
-        if (!title) continue;
-
-        const appName = appId.split(".").pop() ?? appId;
-        notify(`${appName}: ${title}`, "info");
+        if (title) notify(`${appName}: ${title}`, "info");
       }
-
       lastNotifTimestamp = Date.now() * 1000000;
-    } catch {
-      // silently ignore errors
-    }
+    } catch { /* ignore */ }
   }, 5000);
+}
+
+function startWindowsWatcher() {
+  // Windows: use PowerShell to read notification history
+  console.log("[agent] Watching Windows notifications...");
+  let lastCheck = new Date().toISOString();
+
+  setInterval(() => {
+    try {
+      const ps = `Get-WinEvent -LogName 'Microsoft-Windows-PushNotification-Platform/Operational' -MaxEvents 5 -ErrorAction SilentlyContinue | Where-Object { $_.TimeCreated -gt '${lastCheck}' } | Select-Object -ExpandProperty Message`;
+      const result = execSync(`powershell -Command "${ps}"`, { encoding: "utf-8", timeout: 5000 }).trim();
+      if (result) {
+        for (const line of result.split("\n").filter(Boolean).slice(0, 3)) {
+          notify(line.slice(0, 80), "info");
+        }
+      }
+      lastCheck = new Date().toISOString();
+    } catch { /* ignore - may need admin or event log may not exist */ }
+  }, 5000);
+}
+
+function startLinuxWatcher() {
+  // Linux: monitor dbus notifications via dbus-monitor
+  console.log("[agent] Watching Linux notifications (dbus)...");
+
+  const child = exec(
+    `dbus-monitor "interface='org.freedesktop.Notifications',member='Notify'" 2>/dev/null`,
+    { shell: "/bin/bash" }
+  );
+
+  let buffer = "";
+  child.stdout?.on("data", (data: string) => {
+    buffer += data;
+    // Extract notification body from dbus output
+    const matches = buffer.match(/string "([^"]{2,80})"/g);
+    if (matches && matches.length >= 3) {
+      // Usually: app_name, replaces_id, icon, summary, body
+      const summary = matches[2]?.replace(/^string "/, "").replace(/"$/, "");
+      const appName = matches[0]?.replace(/^string "/, "").replace(/"$/, "");
+      if (summary) notify(`${appName}: ${summary}`, "info");
+      buffer = "";
+    }
+    if (buffer.length > 2000) buffer = "";
+  });
 }
