@@ -115,16 +115,27 @@
     .toggle.on::after { transform:translateX(20px); }
 
     /* Modal */
-    #modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); z-index:100; padding:20px; align-items:flex-end; justify-content:center; }
+    #modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); z-index:100; padding:20px; flex-direction:column; align-items:center; justify-content:center; }
     #modal.active { display:flex; }
-    #modal-content { background:rgba(22,22,26,0.95); backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px); border:1px solid var(--glass-border); border-radius:20px; padding:20px; width:100%; max-width:400px; }
-    #modal-content h3 { font-size:15px; margin-bottom:16px; font-weight:600; }
-    .modal-option { display:flex; align-items:center; gap:12px; padding:12px; border-radius:12px; cursor:pointer; margin-bottom:4px; border:none; background:none; width:100%; text-align:left; color:var(--text); }
+    #modal-content { background:rgba(22,22,26,0.95); backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px); border:1px solid var(--glass-border); border-radius:20px; padding:24px; width:100%; max-width:360px; }
+    #modal-content h3 { font-size:16px; margin-bottom:16px; font-weight:600; }
+    .modal-option { display:flex; align-items:center; gap:12px; padding:14px 12px; border-radius:12px; cursor:pointer; margin-bottom:6px; border:none; background:none; width:100%; text-align:left; color:var(--text); }
     .modal-option:active { background:var(--accent-soft); }
     .modal-option .iw { width:38px; height:38px; border-radius:10px; background:var(--accent-soft); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
     .modal-option .iw svg { width:18px; height:18px; color:var(--accent); }
     .modal-option .label { font-size:13px; font-weight:500; }
-    .modal-option .desc { font-size:11px; color:var(--text-dim); margin-top:1px; }
+    .modal-option .desc { font-size:11px; color:var(--text-dim); margin-top:2px; }
+    #modal-step2 input { width:100%; background:rgba(0,0,0,0.4); border:1px solid var(--glass-border); border-radius:10px; padding:12px 14px; color:var(--text); font-size:14px; outline:none; margin-bottom:10px; display:block; }
+    #modal-step2 input:focus { border-color:var(--accent); }
+    #modal-step2 input::placeholder { color:var(--text-dim); }
+    #modal-step2 .submit-btn { width:100%; padding:14px; background:var(--accent); color:#000; font-weight:700; font-size:14px; border-radius:12px; border:none; cursor:pointer; margin-top:4px; }
+    #modal-step2 .submit-btn:active { opacity:0.8; }
+    #modal-step2 .back-btn { background:none; border:none; color:var(--text-dim); font-size:13px; cursor:pointer; padding:8px 0; display:block; width:100%; text-align:center; }
+    /* Apps grid inside modal */
+    #apps-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; max-height:300px; overflow-y:auto; }
+    #apps-grid button { display:flex; flex-direction:column; align-items:center; gap:4px; padding:12px 6px; border-radius:12px; border:1px solid var(--glass-border); background:var(--glass); color:var(--text); cursor:pointer; font-size:10px; font-weight:500; text-align:center; word-break:break-word; }
+    #apps-grid button:active { background:var(--accent-soft); border-color:var(--accent); }
+    #apps-grid button i { width:22px; height:22px; color:var(--accent); }
 
     /* Form */
     #form { position:relative; z-index:1; display:none; padding:12px; }
@@ -178,7 +189,11 @@
           <input id="mf-icon" placeholder="Custom icon URL (optional)">
           <button type="submit" class="submit-btn">Add to deck</button>
         </form>
-        <button class="back-btn" onclick="modalBack()" style="margin-top:10px">← Back</button>
+        <button class="back-btn" onclick="modalBack()">← Back</button>
+      </div>
+      <div id="modal-step-apps" style="display:none">
+        <div id="apps-grid"></div>
+        <button class="back-btn" onclick="modalBack()" style="margin-top:12px;background:none;border:none;color:var(--text-dim);font-size:13px;cursor:pointer;display:block;width:100%;text-align:center;padding:8px">← Back</button>
       </div>
     </div>
   </div>
@@ -284,14 +299,20 @@
     function showDeck() { document.getElementById('grid').classList.remove('hidden'); document.getElementById('config').classList.remove('active'); document.getElementById('nav-deck').classList.add('active'); document.getElementById('nav-config').classList.remove('active'); }
     function showConfig() { document.getElementById('grid').classList.add('hidden'); document.getElementById('config').classList.add('active'); document.getElementById('nav-deck').classList.remove('active'); document.getElementById('nav-config').classList.add('active'); renderConfig(); }
 
-    function openModal() { document.getElementById('modal').classList.add('active'); document.getElementById('modal-step1').style.display=''; document.getElementById('modal-step2').style.display='none'; document.getElementById('modal-title').textContent='Add action'; }
+    function openModal() { document.getElementById('modal').classList.add('active'); document.getElementById('modal-step1').style.display=''; document.getElementById('modal-step2').style.display='none'; document.getElementById('modal-step-apps').style.display='none'; document.getElementById('modal-title').textContent='Add action'; }
     function closeModal() { document.getElementById('modal').classList.remove('active'); }
-    function modalBack() { document.getElementById('modal-step1').style.display=''; document.getElementById('modal-step2').style.display='none'; document.getElementById('modal-title').textContent='Add action'; }
+    function modalBack() { document.getElementById('modal-step1').style.display=''; document.getElementById('modal-step2').style.display='none'; document.getElementById('modal-step-apps').style.display='none'; document.getElementById('modal-title').textContent='Add action'; }
 
     document.querySelectorAll('.modal-option').forEach(opt => {
       opt.onclick = () => {
         currentType = opt.dataset.type;
-        if (currentType === 'apps') { closeModal(); return; }
+        if (currentType === 'apps') {
+          document.getElementById('modal-title').textContent = 'Select app';
+          document.getElementById('modal-step1').style.display='none';
+          document.getElementById('modal-step-apps').style.display='';
+          loadApps();
+          return;
+        }
         const titles = {url:'Add link',copy:'Add copy action',command:'Add command'};
         const ph = {url:'https://...',copy:'Text to copy',command:'command to run'};
         document.getElementById('modal-title').textContent = titles[currentType] || 'Add';
@@ -300,6 +321,20 @@
         document.getElementById('modal-step2').style.display='';
       };
     });
+
+    function loadApps() {
+      fetch(SERVER + '/apps').then(r => r.json()).then(data => {
+        const grid = document.getElementById('apps-grid');
+        if (!data.apps || !data.apps.length) { grid.innerHTML = '<p style="grid-column:1/-1;text-align:center;color:var(--text-dim);padding:20px;font-size:12px">Agent not connected.<br>Start agent on your PC.</p>'; return; }
+        grid.innerHTML = data.apps.map(a => `<button onclick="addApp('${a.name.replace(/'/g,"\\'")}','${a.command.replace(/'/g,"\\'")}')"><i data-lucide="app-window"></i>${a.name}</button>`).join('');
+        lucide.createIcons();
+      }).catch(() => { document.getElementById('apps-grid').innerHTML = '<p style="grid-column:1/-1;text-align:center;color:var(--text-dim);padding:20px;font-size:12px">Could not load apps</p>'; });
+    }
+
+    function addApp(name, command) {
+      actions.push({ id: crypto.randomUUID(), label: name, type: 'command', payload: { type: 'command', command } });
+      save(); closeModal();
+    }
     document.getElementById('modal').onclick = (e) => { if (e.target.id === 'modal') closeModal(); };
 
     document.getElementById('modal-form').onsubmit = (e) => {
