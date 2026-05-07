@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+# Send a notification to Deck tablet
+# Usage: deck-notify "message" [level]
+# Levels: info, success, warning, error
+#
+# Examples:
+#   deck-notify "Build done"
+#   deck-notify "Deploy failed" error
+#   deck-notify "New Slack message from Juan" info
+#
+# Add to your .bashrc/.zshrc:
+#   alias notify='~/path/to/deck-notify'
+
+MSG="${1:-notification}"
+LEVEL="${2:-info}"
+PORT="${DECK_PORT:-4000}"
+
+curl -s -X POST "http://localhost:${PORT}/notify" \
+  -H "Content-Type: application/json" \
+  -d "{\"title\":\"${MSG}\",\"level\":\"${LEVEL}\"}" > /dev/null 2>&1

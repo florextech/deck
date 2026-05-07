@@ -11,7 +11,10 @@ console.log(`[agent] Connecting to ${SERVER}...`);
 
 const socket = io(SERVER, { transports: ["websocket"], query: { role: "agent" } });
 
-socket.on("connect", () => console.log("[agent] Connected ✓"));
+socket.on("connect", () => {
+  console.log("[agent] Connected ✓");
+  notify("Agent connected", "success");
+});
 socket.on("disconnect", () => console.log("[agent] Disconnected"));
 
 // Execute actions from tablet
