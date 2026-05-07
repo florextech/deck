@@ -156,7 +156,7 @@
     <div id="form-card">
       <form id="action-form">
         <input id="f-label" placeholder="Button name" required>
-        <input id="f-icon" placeholder="Icon URL (optional, or emoji)">
+        <input id="f-icon" placeholder="Custom icon URL (optional)">
         <input id="f-value" placeholder="Value" required>
         <button type="submit" class="submit-btn">Add</button>
       </form>
@@ -164,11 +164,22 @@
   </div>
   <div id="modal">
     <div id="modal-content">
-      <h3>Add action</h3>
-      <button class="modal-option" data-type="url"><div class="iw"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></div><div><div class="label">Open a link</div><div class="desc">Website, URL</div></div></button>
-      <button class="modal-option" data-type="copy"><div class="iw"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></div><div><div class="label">Copy text</div><div class="desc">Copy to PC clipboard</div></div></button>
-      <button class="modal-option" data-type="command"><div class="iw"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg></div><div><div class="label">Run command</div><div class="desc">Execute on PC</div></div></button>
-      <button class="modal-option" data-type="apps"><div class="iw"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></div><div><div class="label">Open app</div><div class="desc">From installed apps</div></div></button>
+      <h3 id="modal-title">Add action</h3>
+      <div id="modal-step1">
+        <button class="modal-option" data-type="url"><div class="iw"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></div><div><div class="label">Open a link</div><div class="desc">Website, URL</div></div></button>
+        <button class="modal-option" data-type="copy"><div class="iw"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></div><div><div class="label">Copy text</div><div class="desc">Copy to PC clipboard</div></div></button>
+        <button class="modal-option" data-type="command"><div class="iw"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg></div><div><div class="label">Run command</div><div class="desc">Execute on PC</div></div></button>
+        <button class="modal-option" data-type="apps"><div class="iw"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></div><div><div class="label">Open app</div><div class="desc">From installed apps</div></div></button>
+      </div>
+      <div id="modal-step2" style="display:none">
+        <form id="modal-form">
+          <input id="mf-label" placeholder="Button name" required>
+          <input id="mf-value" required>
+          <input id="mf-icon" placeholder="Custom icon URL (optional)">
+          <button type="submit" class="submit-btn">Add to deck</button>
+        </form>
+        <button class="back-btn" onclick="modalBack()" style="margin-top:10px">← Back</button>
+      </div>
     </div>
   </div>
   <div id="nav">
@@ -225,11 +236,9 @@
       ).join('');
     }
 
-    // Tile icon: URL image > emoji > Lucide icon
+    // Tile icon: custom image URL only if set, otherwise Lucide
     function getTileIcon(a) {
       if (a.icon && a.icon.startsWith('http')) return `<div class="tile-icon"><img src="${a.icon}" alt=""></div>`;
-      if (a.icon && a.icon.length > 0 && a.icon.length <= 2) return `<div class="tile-icon" style="font-size:28px">${a.icon}</div>`;
-      // Default: Lucide icon
       const lucideMap = { url: 'globe', copy: 'clipboard', command: 'terminal' };
       return `<div class="tile-icon"><i data-lucide="${lucideMap[a.type] || 'zap'}"></i></div>`;
     }
@@ -272,28 +281,39 @@
     function del(id) { actions = actions.filter(a => a.id !== id); save(); }
     function save() { fetch(SERVER + '/config', { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify({actions}) }); renderGrid(); renderConfig(); }
 
-    function showDeck() { document.getElementById('grid').classList.remove('hidden'); document.getElementById('config').classList.remove('active'); document.getElementById('form').classList.remove('active'); document.getElementById('nav-deck').classList.add('active'); document.getElementById('nav-config').classList.remove('active'); }
-    function showConfig() { document.getElementById('grid').classList.add('hidden'); document.getElementById('config').classList.add('active'); document.getElementById('form').classList.remove('active'); document.getElementById('nav-deck').classList.remove('active'); document.getElementById('nav-config').classList.add('active'); renderConfig(); }
+    function showDeck() { document.getElementById('grid').classList.remove('hidden'); document.getElementById('config').classList.remove('active'); document.getElementById('nav-deck').classList.add('active'); document.getElementById('nav-config').classList.remove('active'); }
+    function showConfig() { document.getElementById('grid').classList.add('hidden'); document.getElementById('config').classList.add('active'); document.getElementById('nav-deck').classList.remove('active'); document.getElementById('nav-config').classList.add('active'); renderConfig(); }
 
-    function openModal() { document.getElementById('modal').classList.add('active'); }
+    function openModal() { document.getElementById('modal').classList.add('active'); document.getElementById('modal-step1').style.display=''; document.getElementById('modal-step2').style.display='none'; document.getElementById('modal-title').textContent='Add action'; }
     function closeModal() { document.getElementById('modal').classList.remove('active'); }
+    function modalBack() { document.getElementById('modal-step1').style.display=''; document.getElementById('modal-step2').style.display='none'; document.getElementById('modal-title').textContent='Add action'; }
+
     document.querySelectorAll('.modal-option').forEach(opt => {
-      opt.onclick = () => { currentType = opt.dataset.type; closeModal(); if (currentType === 'apps') return; const ph = {url:'https://...',copy:'Text to copy',command:'command to run'}; document.getElementById('f-value').placeholder = ph[currentType]||''; document.getElementById('grid').classList.add('hidden'); document.getElementById('config').classList.remove('active'); document.getElementById('form').classList.add('active'); };
+      opt.onclick = () => {
+        currentType = opt.dataset.type;
+        if (currentType === 'apps') { closeModal(); return; }
+        const titles = {url:'Add link',copy:'Add copy action',command:'Add command'};
+        const ph = {url:'https://...',copy:'Text to copy',command:'command to run'};
+        document.getElementById('modal-title').textContent = titles[currentType] || 'Add';
+        document.getElementById('mf-value').placeholder = ph[currentType] || '';
+        document.getElementById('modal-step1').style.display='none';
+        document.getElementById('modal-step2').style.display='';
+      };
     });
     document.getElementById('modal').onclick = (e) => { if (e.target.id === 'modal') closeModal(); };
 
-    document.getElementById('action-form').onsubmit = (e) => {
+    document.getElementById('modal-form').onsubmit = (e) => {
       e.preventDefault();
-      const label = document.getElementById('f-label').value;
-      const icon = document.getElementById('f-icon').value || undefined;
-      const value = document.getElementById('f-value').value;
+      const label = document.getElementById('mf-label').value;
+      const icon = document.getElementById('mf-icon').value || undefined;
+      const value = document.getElementById('mf-value').value;
       const payload = currentType==='url'?{type:'url',url:value}:currentType==='copy'?{type:'copy',text:value}:{type:'command',command:value};
       actions.push({ id: crypto.randomUUID(), label, icon, type: currentType, payload });
       save();
-      document.getElementById('f-label').value = '';
-      document.getElementById('f-icon').value = '';
-      document.getElementById('f-value').value = '';
-      showConfig();
+      document.getElementById('mf-label').value = '';
+      document.getElementById('mf-icon').value = '';
+      document.getElementById('mf-value').value = '';
+      closeModal();
     };
 
     renderGrid();
