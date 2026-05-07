@@ -4,11 +4,12 @@
   "version": "0.1.0",
   "description": "AI Command Center — Open Deck by Florex Labs",
   "scripts": {
-    "dev": "tsx scripts/qr.ts && concurrently -n server,web,agent -c blue,green,magenta \"pnpm dev:server\" \"pnpm dev:web\" \"pnpm dev:agent\"",
+    "dev": "tsx scripts/qr.ts && concurrently -n server,agent -c blue,magenta \"pnpm dev:server\" \"pnpm dev:agent\"",
     "dev:web": "pnpm --filter @open-deck/web dev",
     "dev:server": "pnpm --filter @open-deck/server dev",
     "dev:agent": "pnpm --filter @open-deck/agent dev",
     "build": "pnpm -r build",
+    "build:standalone": "tsx scripts/build-standalone.ts",
     "lint": "pnpm -r lint",
     "test": "vitest run",
     "typecheck": "pnpm -r typecheck"
@@ -19,6 +20,7 @@
   },
   "devDependencies": {
     "concurrently": "^9.2.1",
+    "esbuild": "^0.28.0",
     "qrcode-terminal": "^0.12.0",
     "typescript": "5.8.3",
     "vitest": "3.1.3"

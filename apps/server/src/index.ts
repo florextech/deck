@@ -2,7 +2,7 @@ import express from "express";
 import { createServer } from "node:http";
 import { Server } from "socket.io";
 import { readFileSync, writeFileSync, watchFile } from "node:fs";
-import { resolve } from "node:path";
+import { resolve, join } from "node:path";
 import cors from "cors";
 import type { ServerToClientEvents, ClientToServerEvents, DeckAction } from "@open-deck/shared";
 
@@ -32,10 +32,13 @@ watchFile(CONFIG_PATH, () => {
 const app = express();
 app.use(cors());
 app.use(express.json());
+app.use(express.static(join(process.cwd(), "public")));
 
 const httpServer = createServer(app);
 const io = new Server<ClientToServerEvents, ServerToClientEvents>(httpServer, {
-  cors: { origin: "*" },
+  cors: { origin: "*", methods: ["GET", "POST"] },
+  transports: ["polling", "websocket"],
+  allowEIO3: true,
 });
 
 // Track desktop agent socket
@@ -120,7 +123,7 @@ app.post("/notify", (req, res) => {
   res.json({ ok: true });
 });
 
-httpServer.listen(PORT, () => {
+httpServer.listen(PORT, "0.0.0.0", () => {
   console.log(`[deck] Server on http://localhost:${PORT}`);
   console.log(`[deck] Config: ${CONFIG_PATH} (${actions.length} actions)`);
 });

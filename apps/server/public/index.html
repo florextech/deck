@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#09090b">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Deck</title>
+  <link rel="manifest" href="/manifest.json">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --bg: #09090b;
+      --glass: rgba(255, 255, 255, 0.035);
+      --glass-strong: rgba(255, 255, 255, 0.055);
+      --glass-border: rgba(255, 255, 255, 0.08);
+      --glass-border-active: rgba(255, 255, 255, 0.18);
+      --glass-glow: rgba(167, 139, 250, 0.15);
+      --text: #f4f4f5;
+      --text-dim: #71717a;
+      --accent: #a78bfa;
+      --accent-soft: rgba(167, 139, 250, 0.12);
+      --green: #4ade80;
+      --red: #f87171;
+      --yellow: #facc15;
+      --radius: 16px;
+      --blur: 16px;
+    }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', system-ui, sans-serif;
+      height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      -webkit-font-smoothing: antialiased;
+    }
+    /* Ambient background orbs */
+    body::before, body::after {
+      content: '';
+      position: fixed;
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 0;
+    }
+    body::before {
+      width: 50vw; height: 50vw;
+      top: -20%; left: -15%;
+      background: radial-gradient(circle, rgba(139, 92, 246, 0.08), transparent 70%);
+      filter: blur(60px);
+    }
+    body::after {
+      width: 45vw; height: 45vw;
+      bottom: -15%; right: -10%;
+      background: radial-gradient(circle, rgba(236, 72, 153, 0.06), transparent 70%);
+      filter: blur(60px);
+    }
+
+    /* Status bar - LCD style */
+    #status-bar {
+      position: relative; z-index: 1;
+      margin: 12px 12px 0;
+      height: 36px;
+      background: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(var(--blur));
+      -webkit-backdrop-filter: blur(var(--blur));
+      border: 1px solid var(--glass-border);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      padding: 0 14px;
+      gap: 8px;
+      font-family: 'SF Mono', 'Fira Code', 'Menlo', monospace;
+      font-size: 11px;
+      flex-shrink: 0;
+    }
+    #status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--yellow); transition: background 0.3s; }
+    #status-dot.ok { background: var(--green); box-shadow: 0 0 6px var(--green); }
+    #status-dot.err { background: var(--red); box-shadow: 0 0 6px var(--red); }
+    #status-text { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-dim); transition: color 0.3s; }
+
+    /* Grid */
+    #grid {
+      position: relative; z-index: 1;
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      align-content: start;
+    }
+    @media (min-width: 600px) { #grid { grid-template-columns: repeat(4, 1fr); } }
+    @media (min-width: 900px) { #grid { grid-template-columns: repeat(5, 1fr); gap: 12px; } }
+
+    .tile {
+      aspect-ratio: 1;
+      background: var(--glass);
+      backdrop-filter: blur(var(--blur));
+      -webkit-backdrop-filter: blur(var(--blur));
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 12px 8px;
+      cursor: pointer;
+      transition: transform 0.12s ease, background 0.2s, border-color 0.2s, box-shadow 0.2s;
+    }
+    .tile:active {
+      transform: scale(0.88);
+      background: var(--glass-strong);
+      border-color: var(--glass-border-active);
+      box-shadow: 0 0 24px var(--glass-glow), inset 0 1px 0 rgba(255,255,255,0.04);
+    }
+    .tile svg { width: 28px; height: 28px; color: var(--accent); opacity: 0.9; }
+    .tile span { font-size: 11px; font-weight: 500; text-align: center; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; color: var(--text); opacity: 0.85; }
+
+    /* Config */
+    #config { position: relative; z-index: 1; flex: 1; overflow-y: auto; padding: 12px; display: none; }
+    #config.active { display: block; }
+    #grid.hidden { display: none; }
+
+    .config-item {
+      background: var(--glass);
+      backdrop-filter: blur(var(--blur));
+      -webkit-backdrop-filter: blur(var(--blur));
+      border: 1px solid var(--glass-border);
+      border-radius: 12px;
+      padding: 12px 14px;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .config-item svg { width: 18px; height: 18px; color: var(--accent); flex-shrink: 0; opacity: 0.8; }
+    .config-item .info { flex: 1; min-width: 0; }
+    .config-item .info p { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .config-item .info small { font-size: 10px; color: var(--text-dim); }
+    .config-item .del { background: none; border: none; color: var(--text-dim); font-size: 18px; padding: 6px 8px; cursor: pointer; border-radius: 8px; transition: color 0.15s; }
+    .config-item .del:active { color: var(--red); }
+
+    .add-btn {
+      width: 100%;
+      padding: 16px;
+      border: 1px dashed rgba(167, 139, 250, 0.2);
+      border-radius: var(--radius);
+      background: var(--accent-soft);
+      backdrop-filter: blur(var(--blur));
+      -webkit-backdrop-filter: blur(var(--blur));
+      color: var(--accent);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-bottom: 12px;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .add-btn:active { border-color: var(--accent); background: rgba(167, 139, 250, 0.18); }
+
+    /* Modal */
+    #modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 100; padding: 20px; align-items: flex-end; justify-content: center; }
+    #modal.active { display: flex; }
+    #modal-content {
+      background: rgba(22, 22, 26, 0.95);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--glass-border);
+      border-radius: 20px;
+      padding: 20px;
+      width: 100%;
+      max-width: 400px;
+    }
+    #modal-content h3 { font-size: 15px; margin-bottom: 16px; font-weight: 600; }
+    .modal-option { display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 12px; cursor: pointer; margin-bottom: 4px; border: none; background: none; width: 100%; text-align: left; color: var(--text); transition: background 0.15s; }
+    .modal-option:active { background: var(--accent-soft); }
+    .modal-option .iw { width: 38px; height: 38px; border-radius: 10px; background: var(--accent-soft); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .modal-option .iw svg { width: 18px; height: 18px; color: var(--accent); }
+    .modal-option .label { font-size: 13px; font-weight: 500; }
+    .modal-option .desc { font-size: 11px; color: var(--text-dim); margin-top: 1px; }
+
+    /* Form */
+    #form { position: relative; z-index: 1; display: none; padding: 12px; }
+    #form.active { display: block; }
+    #form-card { background: var(--glass); backdrop-filter: blur(var(--blur)); -webkit-backdrop-filter: blur(var(--blur)); border: 1px solid var(--glass-border); border-radius: var(--radius); padding: 16px; }
+    #form input { width: 100%; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); border-radius: 10px; padding: 12px 14px; color: var(--text); font-size: 14px; outline: none; margin-bottom: 10px; transition: border-color 0.2s; }
+    #form input:focus { border-color: var(--accent); }
+    #form input::placeholder { color: var(--text-dim); }
+    #form .submit-btn { width: 100%; padding: 14px; background: var(--accent); color: #000; font-weight: 700; font-size: 14px; border-radius: 12px; border: none; cursor: pointer; margin-top: 4px; }
+    #form .submit-btn:active { opacity: 0.8; }
+    #form .back-btn { background: none; border: none; color: var(--text-dim); font-size: 13px; cursor: pointer; margin-bottom: 12px; padding: 4px 0; }
+
+    /* Nav */
+    #nav {
+      position: relative; z-index: 1;
+      display: flex;
+      border-top: 1px solid var(--glass-border);
+      background: var(--glass);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      flex-shrink: 0;
+    }
+    #nav button { flex: 1; padding: 12px 0 10px; display: flex; flex-direction: column; align-items: center; gap: 3px; background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 10px; font-weight: 500; transition: color 0.2s; }
+    #nav button.active { color: var(--accent); }
+    #nav button svg { width: 20px; height: 20px; }
+
+    /* Empty state */
+    .empty { grid-column: 1/-1; text-align: center; color: var(--text-dim); padding: 80px 20px; font-size: 13px; line-height: 1.6; }
+    .empty b { color: var(--accent); }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 0; }
+  </style>
+</head>
+<body>
+  <div id="status-bar">
+    <div id="status-dot"></div>
+    <div id="status-text">connecting...</div>
+  </div>
+
+  <div id="grid"></div>
+  <div id="config"></div>
+  <div id="form">
+    <button class="back-btn" onclick="showConfig()">← Back</button>
+    <div id="form-card">
+      <form id="action-form">
+        <input id="f-label" placeholder="Button name" required>
+        <input id="f-value" placeholder="Value" required>
+        <button type="submit" class="submit-btn">Add</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="modal">
+    <div id="modal-content">
+      <h3>Add action</h3>
+      <button class="modal-option" data-type="url">
+        <div class="iw"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></div>
+        <div><div class="label">Open a link</div><div class="desc">Website, URL</div></div>
+      </button>
+      <button class="modal-option" data-type="copy">
+        <div class="iw"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></div>
+        <div><div class="label">Copy text</div><div class="desc">Copy to PC clipboard</div></div>
+      </button>
+      <button class="modal-option" data-type="command">
+        <div class="iw"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg></div>
+        <div><div class="label">Run command</div><div class="desc">Execute on PC</div></div>
+      </button>
+      <button class="modal-option" data-type="apps">
+        <div class="iw"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></div>
+        <div><div class="label">Open app</div><div class="desc">From installed apps</div></div>
+      </button>
+    </div>
+  </div>
+
+  <div id="nav">
+    <button id="nav-deck" class="active" onclick="showDeck()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+      Deck
+    </button>
+    <button id="nav-config" onclick="showConfig()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      Config
+    </button>
+  </div>
+
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+  <script>
+    const SERVER = location.origin;
+    const socket = io(SERVER, { transports: ['polling', 'websocket'] });
+    let actions = [];
+    let currentType = 'url';
+
+    socket.on('connect', () => setStatus('ok', 'connected'));
+    socket.on('connect_error', () => setStatus('err', 'connection error'));
+    socket.on('disconnect', () => setStatus('', 'reconnecting...'));
+    socket.on('config:actions', (data) => { actions = data; renderGrid(); renderConfig(); });
+    socket.on('notification:new', (n) => {
+      const colors = { info: 'var(--accent)', success: 'var(--green)', warning: 'var(--yellow)', error: 'var(--red)' };
+      document.getElementById('status-text').style.color = colors[n.level] || 'var(--green)';
+      document.getElementById('status-text').textContent = n.title;
+      document.getElementById('status-dot').className = n.level === 'error' ? 'err' : 'ok';
+    });
+
+    function setStatus(cls, text) {
+      document.getElementById('status-dot').className = cls;
+      document.getElementById('status-text').textContent = text;
+      const colors = { ok: 'var(--green)', err: 'var(--red)', '': 'var(--yellow)' };
+      document.getElementById('status-text').style.color = colors[cls] || 'var(--text-dim)';
+    }
+
+    const icons = {
+      url: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>',
+      copy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>',
+      command: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>',
+    };
+
+    function renderGrid() {
+      const el = document.getElementById('grid');
+      if (!actions.length) { el.innerHTML = '<div class="empty">No actions yet.<br>Tap <b>Config</b> to add.</div>'; return; }
+      el.innerHTML = actions.map(a => `<div class="tile" onclick="exec('${a.id}')">${icons[a.type] || icons.command}<span>${a.label}</span></div>`).join('');
+    }
+
+    function renderConfig() {
+      const el = document.getElementById('config');
+      el.innerHTML = `<button class="add-btn" onclick="openModal()">+ Add action</button>` +
+        actions.map(a => `<div class="config-item">${icons[a.type] || icons.command}<div class="info"><p>${a.label}</p><small>${a.type}</small></div><button class="del" onclick="del('${a.id}')">×</button></div>`).join('');
+    }
+
+    function exec(id) { socket.emit('action:execute', id); }
+    function del(id) { actions = actions.filter(a => a.id !== id); save(); }
+    function save() { fetch(SERVER + '/config', { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({actions}) }); renderGrid(); renderConfig(); }
+
+    function showDeck() {
+      document.getElementById('grid').classList.remove('hidden');
+      document.getElementById('config').classList.remove('active');
+      document.getElementById('form').classList.remove('active');
+      document.getElementById('nav-deck').classList.add('active');
+      document.getElementById('nav-config').classList.remove('active');
+    }
+    function showConfig() {
+      document.getElementById('grid').classList.add('hidden');
+      document.getElementById('config').classList.add('active');
+      document.getElementById('form').classList.remove('active');
+      document.getElementById('nav-deck').classList.remove('active');
+      document.getElementById('nav-config').classList.add('active');
+    }
+
+    function openModal() { document.getElementById('modal').classList.add('active'); }
+    function closeModal() { document.getElementById('modal').classList.remove('active'); }
+
+    document.querySelectorAll('.modal-option').forEach(opt => {
+      opt.onclick = () => {
+        currentType = opt.dataset.type;
+        closeModal();
+        if (currentType === 'apps') return; // TODO
+        const ph = { url: 'https://...', copy: 'Text to copy', command: 'command to run' };
+        document.getElementById('f-value').placeholder = ph[currentType] || '';
+        document.getElementById('grid').classList.add('hidden');
+        document.getElementById('config').classList.remove('active');
+        document.getElementById('form').classList.add('active');
+      };
+    });
+    document.getElementById('modal').onclick = (e) => { if (e.target.id === 'modal') closeModal(); };
+
+    document.getElementById('action-form').onsubmit = (e) => {
+      e.preventDefault();
+      const label = document.getElementById('f-label').value;
+      const value = document.getElementById('f-value').value;
+      const payload = currentType === 'url' ? {type:'url',url:value} : currentType === 'copy' ? {type:'copy',text:value} : {type:'command',command:value};
+      actions.push({ id: crypto.randomUUID(), label, type: currentType, payload });
+      save();
+      document.getElementById('f-label').value = '';
+      document.getElementById('f-value').value = '';
+      showConfig();
+    };
+
+    renderGrid();
+  </script>
+</body>
+</html>

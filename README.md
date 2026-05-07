@@ -1,117 +1,77 @@
-# Open Deck
+# Deck
 
-**Stream Deck para tu tablet** — Accesos rápidos configurables que ejecutan comandos en tu PC.
+Stream Deck for your tablet. Configure buttons on your phone/tablet that execute actions on your PC.
 
-## Cómo funciona
+## How it works
 
 ```
-┌─────────────┐         ┌──────────┐         ┌──────────────┐
-│  Tablet     │ ──ws──▶ │  Server  │ ──ws──▶ │ Desktop Agent│
-│  (PWA)      │ ◀──ws── │ :4000    │ ◀──ws── │ (tu PC)      │
-└─────────────┘         └──────────┘         └──────────────┘
-   Grilla de              Reenvía              Ejecuta:
-   botones +              comandos +           - Copiar al clipboard
-   notificaciones         notificaciones       - Abrir URLs
-                                               - Ejecutar comandos
+Tablet/Phone  ──ws──▶  Server (:4000)  ──ws──▶  Desktop Agent (your PC)
+   (browser)            relays commands           executes: open apps,
+   tap buttons          serves UI                 copy text, run commands
 ```
 
-## Setup
+## Quick Start
 
 ```bash
 pnpm install
 pnpm dev
 ```
 
-Eso levanta:
-- **Web** → http://localhost:3100 (abrir en la tablet)
-- **Server** → http://localhost:4000
-- **Agent** → se conecta al server y ejecuta comandos en tu PC
+Scan the QR code shown in terminal with your tablet. Done.
 
-## Configurar acciones
+## Configure
 
-Edita `deck.config.json` en la raíz:
+**From the tablet:** Tap Config → Add action → pick type → done.
+
+**From a file:** Edit `deck.config.json`:
 
 ```json
 {
   "actions": [
-    { "id": "1", "label": "GitHub", "icon": "🐙", "type": "url", "payload": { "type": "url", "url": "https://github.com" } },
-    { "id": "2", "label": "Copy SSH", "icon": "🔑", "type": "copy", "payload": { "type": "copy", "text": "tu-ssh-key" } },
-    { "id": "3", "label": "Deploy", "icon": "🚀", "type": "command", "payload": { "type": "command", "command": "cd ~/app && pnpm deploy" } }
+    { "id": "1", "label": "GitHub", "type": "url", "payload": { "type": "url", "url": "https://github.com" } },
+    { "id": "2", "label": "Copy Key", "type": "copy", "payload": { "type": "copy", "text": "my-ssh-key" } },
+    { "id": "3", "label": "Deploy", "type": "command", "payload": { "type": "command", "command": "cd ~/app && pnpm deploy" } }
   ]
 }
 ```
 
-**Hot-reload**: al guardar el archivo, los botones se actualizan automáticamente en la tablet.
+Hot-reload: save the file → buttons update instantly on the tablet.
 
-### Tipos de acciones
-
-| Tipo | Qué hace |
-|------|----------|
-| `url` | Abre una URL en el navegador del PC |
-| `copy` | Copia texto al clipboard del PC |
-| `command` | Ejecuta un comando en la terminal del PC |
-
-### Opciones por acción
-
-| Campo | Requerido | Descripción |
-|-------|-----------|-------------|
-| `id` | ✓ | ID único |
-| `label` | ✓ | Texto del botón |
-| `icon` | | Emoji del botón |
-| `type` | ✓ | `url`, `copy`, o `command` |
-| `payload` | ✓ | Datos de la acción |
-| `color` | | Color del borde (hex) |
-
-## Enviar notificaciones a la tablet
-
-Desde cualquier script o CI:
+## Send notifications to tablet
 
 ```bash
 curl -X POST http://localhost:4000/notify \
   -H "Content-Type: application/json" \
-  -d '{"title": "Deploy completado ✓", "level": "success"}'
+  -d '{"title": "Deploy done ✓", "level": "success"}'
 ```
 
-Levels: `info`, `success`, `warning`, `error`
+## Install as standalone (no Docker needed)
 
-## Usar desde tablet
+```bash
+pnpm build:standalone
+```
 
-1. Abre `http://<tu-ip>:3100` en Chrome/Safari de tu tablet
-2. "Add to Home Screen" para modo fullscreen (PWA)
-3. Presiona botones → se ejecutan en tu PC
+This creates a single executable in `dist/` that you can run anywhere without Node.js installed.
 
-## Estructura
+## Structure
 
 ```
-open-deck/
-├── deck.config.json      ← TUS ACCIONES (edita esto)
-├── apps/
-│   ├── web/              ← UI (Next.js, se abre en tablet)
-│   ├── server/           ← WebSocket relay
-│   └── agent/            ← Desktop agent (corre en tu PC)
-└── packages/
-    └── shared/           ← Tipos TypeScript
+deck.config.json    ← your buttons (edit this)
+apps/
+  server/           ← serves UI + WebSocket relay
+  agent/            ← runs on PC, executes commands
 ```
 
 ## Scripts
 
 ```bash
-pnpm dev          # Todo junto (server + web + agent)
-pnpm dev:web      # Solo la UI
-pnpm dev:server   # Solo el server
-pnpm dev:agent    # Solo el agent
-pnpm test         # Tests
-pnpm typecheck    # Verificar tipos
+pnpm dev            # server + agent (shows QR)
+pnpm dev:server     # only server
+pnpm dev:agent      # only agent
+pnpm test           # tests
+pnpm build:standalone  # create executable
 ```
-
-## Docker
-
-```bash
-docker compose up
-```
-
-El agent NO va en Docker (necesita acceso al sistema del PC).
 
 ## License
 
-MIT © Florex Labs
+MIT
