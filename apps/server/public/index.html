@@ -83,9 +83,9 @@
     @media(min-width:900px){#grid{grid-template-columns:repeat(5,1fr);}}
     .tile { background:var(--glass); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); border:1px solid var(--glass-border); border-radius:14px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; padding:10px 6px; cursor:pointer; transition:transform .12s,background .2s,border-color .2s,box-shadow .2s; min-height:80px; }
     .tile:active { transform:scale(0.88); background:var(--glass-strong); border-color:var(--glass-border-active); box-shadow:0 0 24px var(--glass-glow); }
-    .tile .tile-icon { width:32px; height:32px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
-    .tile .tile-icon svg { width:100%; height:100%; color:var(--accent); }
-    .tile .tile-icon img { width:100%; height:100%; border-radius:6px; object-fit:contain; }
+    .tile .tile-icon { width:32px; height:32px; display:flex; align-items:center; justify-content:center; flex-shrink:0; color:var(--accent); }
+    .tile .tile-icon svg { width:28px; height:28px; }
+    .tile .tile-icon img { width:32px; height:32px; border-radius:6px; object-fit:contain; }
     .tile span { font-size:10px; font-weight:500; text-align:center; line-height:1.2; word-break:break-word; max-width:100%; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; color:var(--text); opacity:.85; }
 
     /* Config */
@@ -179,6 +179,7 @@
   </div>
 
   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
   <script>
     const SERVER = location.origin;
     const socket = io(SERVER, { transports: ['polling', 'websocket'] });
@@ -187,11 +188,11 @@
     let notifications = [];
     let soundEnabled = JSON.parse(localStorage.getItem('deck-sound') || 'true');
     let currentTheme = localStorage.getItem('deck-theme') || 'midnight';
+    let configTab = 'actions'; // 'actions' | 'settings'
 
-    // Apply saved theme
     document.documentElement.dataset.theme = currentTheme;
 
-    // Notification sound (Web Audio API)
+    // Sound
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     function playNotifSound() {
       if (!soundEnabled) return;
@@ -200,12 +201,12 @@
       osc.connect(gain); gain.connect(audioCtx.destination);
       osc.frequency.setValueAtTime(880, audioCtx.currentTime);
       osc.frequency.setValueAtTime(1100, audioCtx.currentTime + 0.05);
-      gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.2);
-      osc.start(); osc.stop(audioCtx.currentTime + 0.2);
+      gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.15);
+      osc.start(); osc.stop(audioCtx.currentTime + 0.15);
     }
 
-    // Socket events
+    // Socket
     socket.on('connect', () => addNotif('connected', 'success'));
     socket.on('connect_error', () => addNotif('connection error', 'error'));
     socket.on('disconnect', () => addNotif('reconnecting...', 'warning'));
@@ -226,35 +227,44 @@
       ).join('');
     }
 
-    // Icons
-    const svgIcons = {
-      url: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>',
-      copy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>',
-      command: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>',
-    };
-
+    // Tile icon: URL image > emoji > Lucide icon
     function getTileIcon(a) {
       if (a.icon && a.icon.startsWith('http')) return `<div class="tile-icon"><img src="${a.icon}" alt=""></div>`;
-      if (a.icon) return `<div class="tile-icon" style="font-size:28px">${a.icon}</div>`;
-      return `<div class="tile-icon">${svgIcons[a.type] || svgIcons.command}</div>`;
+      if (a.icon && !a.icon.startsWith('<')) return `<div class="tile-icon" style="font-size:28px">${a.icon}</div>`;
+      // Lucide icon name based on type
+      const lucideMap = { url: 'globe', copy: 'clipboard', command: 'terminal' };
+      return `<div class="tile-icon"><i data-lucide="${lucideMap[a.type] || 'zap'}"></i></div>`;
     }
 
     function renderGrid() {
       const el = document.getElementById('grid');
       if (!actions.length) { el.innerHTML = '<div class="empty">No actions yet.<br>Tap <b>Config</b> to add.</div>'; return; }
       el.innerHTML = actions.map(a => `<div class="tile" onclick="exec('${a.id}')">${getTileIcon(a)}<span>${a.label}</span></div>`).join('');
+      lucide.createIcons();
     }
 
     function renderConfig() {
       const el = document.getElementById('config');
-      let html = `<button class="add-btn" onclick="openModal()">+ Add action</button>`;
-      html += actions.map(a => `<div class="config-item">${svgIcons[a.type] || svgIcons.command}<div class="info"><p>${a.label}</p><small>${a.type}${a.icon ? ' · custom icon' : ''}</small></div><button class="del" onclick="del('${a.id}')">×</button></div>`).join('');
-      // Settings
-      html += `<div class="settings-section"><h4>Theme</h4><div class="theme-grid">`;
-      const themes = [{id:'midnight',color:'#a78bfa'},{id:'ocean',color:'#38bdf8'},{id:'ember',color:'#fb923c'},{id:'forest',color:'#4ade80'},{id:'rose',color:'#f472b6'}];
-      html += themes.map(t => `<button class="theme-btn ${currentTheme===t.id?'active':''}" style="background:${t.color}" data-name="${t.id}" onclick="setTheme('${t.id}')"></button>`).join('');
-      html += `</div><h4>Sound</h4><div class="sound-toggle"><span>Notification sound</span><button class="toggle ${soundEnabled?'on':''}" onclick="toggleSound()"></button></div></div>`;
+      // Tabs
+      let html = `<div style="display:flex;gap:4px;margin-bottom:12px;">`;
+      html += `<button onclick="configTab='actions';renderConfig()" style="flex:1;padding:10px;border-radius:10px;border:1px solid ${configTab==='actions'?'var(--accent)':'var(--glass-border)'};background:${configTab==='actions'?'var(--accent-soft)':'transparent'};color:${configTab==='actions'?'var(--accent)':'var(--text-dim)'};font-size:12px;font-weight:600;cursor:pointer">Actions</button>`;
+      html += `<button onclick="configTab='settings';renderConfig()" style="flex:1;padding:10px;border-radius:10px;border:1px solid ${configTab==='settings'?'var(--accent)':'var(--glass-border)'};background:${configTab==='settings'?'var(--accent-soft)':'transparent'};color:${configTab==='settings'?'var(--accent)':'var(--text-dim)'};font-size:12px;font-weight:600;cursor:pointer">Settings</button>`;
+      html += `</div>`;
+
+      if (configTab === 'actions') {
+        html += `<button class="add-btn" onclick="openModal()">+ Add action</button>`;
+        html += actions.map(a => {
+          const iconHtml = a.icon && a.icon.startsWith('http') ? `<img src="${a.icon}" style="width:20px;height:20px;border-radius:4px">` : `<i data-lucide="${{url:'globe',copy:'clipboard',command:'terminal'}[a.type]||'zap'}" style="width:18px;height:18px;color:var(--accent)"></i>`;
+          return `<div class="config-item">${iconHtml}<div class="info"><p>${a.label}</p><small>${a.type}</small></div><button class="del" onclick="del('${a.id}')">×</button></div>`;
+        }).join('');
+      } else {
+        html += `<div class="settings-section" style="border:none;margin:0;padding:0"><h4>Theme</h4><div class="theme-grid">`;
+        const themes = [{id:'midnight',color:'#a78bfa'},{id:'ocean',color:'#38bdf8'},{id:'ember',color:'#fb923c'},{id:'forest',color:'#4ade80'},{id:'rose',color:'#f472b6'}];
+        html += themes.map(t => `<button class="theme-btn ${currentTheme===t.id?'active':''}" style="background:${t.color}" data-name="${t.id}" onclick="setTheme('${t.id}')"></button>`).join('');
+        html += `</div><h4>Sound</h4><div class="sound-toggle"><span>Notification sound</span><button class="toggle ${soundEnabled?'on':''}" onclick="toggleSound()"></button></div></div>`;
+      }
       el.innerHTML = html;
+      lucide.createIcons();
     }
 
     function setTheme(id) { currentTheme = id; document.documentElement.dataset.theme = id; localStorage.setItem('deck-theme', id); renderConfig(); }

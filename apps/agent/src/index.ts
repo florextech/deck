@@ -77,19 +77,27 @@ function detectMacApps(): DetectedApp[] {
   const dirs = ["/Applications", "/System/Applications", `${process.env.HOME}/Applications`];
   const apps: DetectedApp[] = [];
   const iconMap: Record<string, string> = {
-    "Google Chrome": "🌐", "Firefox": "🦊", "Safari": "🧭", "Arc": "🌈",
-    "Visual Studio Code": "💻", "Cursor": "💻", "Xcode": "🔨",
-    "Slack": "💬", "Discord": "🎮", "Telegram": "✈️", "WhatsApp": "📱",
-    "Spotify": "🎵", "Music": "🎵", "Podcasts": "🎙️",
-    "Terminal": "⬛", "iTerm": "⬛", "Warp": "⬛", "Alacritty": "⬛",
-    "Finder": "📁", "Notes": "📝", "Notion": "📝",
-    "Figma": "🎨", "Sketch": "🎨",
-    "Docker Desktop": "🐳", "Postman": "📡",
-    "System Preferences": "⚙️", "System Settings": "⚙️",
-    "Preview": "🖼️", "Photos": "🖼️",
-    "Calendar": "📅", "Mail": "📧",
-    "1Password": "🔐", "Bitwarden": "🔐",
-    "OBS": "📹", "Zoom": "📹", "Teams": "📹",
+    "Google Chrome": "https://cdn.simpleicons.org/googlechrome",
+    "Firefox": "https://cdn.simpleicons.org/firefox",
+    "Safari": "https://cdn.simpleicons.org/safari",
+    "Arc": "https://cdn.simpleicons.org/arc",
+    "Visual Studio Code": "https://cdn.simpleicons.org/visualstudiocode",
+    "Cursor": "https://cdn.simpleicons.org/cursor",
+    "Slack": "https://cdn.simpleicons.org/slack",
+    "Discord": "https://cdn.simpleicons.org/discord",
+    "Telegram": "https://cdn.simpleicons.org/telegram",
+    "WhatsApp": "https://cdn.simpleicons.org/whatsapp",
+    "Spotify": "https://cdn.simpleicons.org/spotify",
+    "Docker Desktop": "https://cdn.simpleicons.org/docker",
+    "Figma": "https://cdn.simpleicons.org/figma",
+    "Notion": "https://cdn.simpleicons.org/notion",
+    "Postman": "https://cdn.simpleicons.org/postman",
+    "Zoom": "https://cdn.simpleicons.org/zoom",
+    "iTerm": "https://cdn.simpleicons.org/iterm2",
+    "Warp": "https://cdn.simpleicons.org/warp",
+    "OBS": "https://cdn.simpleicons.org/obsstudio",
+    "1Password": "https://cdn.simpleicons.org/1password",
+    "Xcode": "https://cdn.simpleicons.org/xcode",
   };
 
   for (const dir of dirs) {
@@ -98,7 +106,7 @@ function detectMacApps(): DetectedApp[] {
       const entries = readdirSync(dir).filter((f) => f.endsWith(".app"));
       for (const entry of entries) {
         const name = entry.replace(".app", "");
-        const icon = iconMap[name] ?? "📦";
+        const icon = iconMap[name] ?? "";
         apps.push({ name, icon, command: `open -a "${name}"` });
       }
     } catch { /* skip */ }
