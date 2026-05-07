@@ -241,8 +241,15 @@
     let currentTheme = localStorage.getItem('deck-theme') || 'midnight';
     let configTab = 'actions';
 
-    // Role: host (localhost) can edit, others can only execute
-    const isHost = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+    // Role: host can edit actions. Host = accessing from localhost OR from the server's own IP.
+    // Simple approach: if you're on the same device, you're host.
+    // We check by comparing: if the page hostname matches the server hostname, you're host.
+    let isHost = (location.hostname === 'localhost' || location.hostname === '127.0.0.1');
+
+    // Also check if accessing from the server's own IP (same PC, different hostname)
+    fetch(location.origin + '/health').then(r => r.json()).then(d => {
+      if (d.status === 'ok' && d.isLocal) { isHost = true; renderConfig(); }
+    }).catch(() => {});
 
     // Workspaces
     let workspaces = JSON.parse(localStorage.getItem('deck-workspaces') || '[]');

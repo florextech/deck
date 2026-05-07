@@ -3,6 +3,7 @@ import { createServer } from "node:http";
 import { Server } from "socket.io";
 import { readFileSync, writeFileSync, watchFile } from "node:fs";
 import { resolve, join } from "node:path";
+import { networkInterfaces } from "node:os";
 import cors from "cors";
 import type { ServerToClientEvents, ClientToServerEvents, DeckAction } from "@open-deck/shared";
 
@@ -82,8 +83,11 @@ io.on("connection", (socket) => {
   });
 });
 
-app.get("/health", (_req, res) => {
-  res.json({ status: "ok", agent: !!agentSocket, actions: actions.length });
+app.get("/health", (req, res) => {
+  const remoteIp = (req.ip ?? req.socket.remoteAddress ?? "").replace("::ffff:", "");
+  const localIps = Object.values(networkInterfaces()).flat().filter(n => n && n.family === "IPv4" && !n.internal).map(n => n!.address);
+  const isLocal = remoteIp === "127.0.0.1" || remoteIp === "::1" || localIps.includes(remoteIp);
+  res.json({ status: "ok", agent: !!agentSocket, actions: actions.length, isLocal });
 });
 
 // Get detected apps from agent
