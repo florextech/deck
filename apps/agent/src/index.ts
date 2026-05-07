@@ -1,7 +1,7 @@
 import { io } from "socket.io-client";
-import { exec } from "node:child_process";
+import { exec, execSync } from "node:child_process";
 import { readdirSync, existsSync } from "node:fs";
-import { platform } from "node:os";
+import { platform, homedir } from "node:os";
 import type { DeckAction } from "@open-deck/shared";
 
 const SERVER = process.env.SERVER_URL || "http://localhost:4000";
@@ -14,6 +14,7 @@ const socket = io(SERVER, { transports: ["websocket"], query: { role: "agent" } 
 socket.on("connect", () => {
   console.log("[agent] Connected ✓");
   notify("Agent connected", "success");
+  if (os === "darwin") startNotificationWatcher();
 });
 socket.on("disconnect", () => console.log("[agent] Disconnected"));
 
@@ -124,4 +125,52 @@ function detectLinuxApps(): DetectedApp[] {
     { name: "Terminal", icon: "⬛", command: "gnome-terminal" },
     { name: "VS Code", icon: "💻", command: "code" },
   ];
+}
+
+/* ─── macOS System Notification Watcher ─── */
+let lastNotifTimestamp = Date.now() * 1000000; // nanoseconds
+
+function startNotificationWatcher() {
+  const dbPath = `${homedir()}/Library/Group Containers/group.com.apple.usernoted/db2/db`;
+  if (!existsSync(dbPath)) {
+    console.log("[agent] Notification DB not found, skipping watcher");
+    return;
+  }
+
+  console.log("[agent] Watching macOS notifications...");
+
+  setInterval(() => {
+    try {
+      const query = `SELECT rec.app_id, rec.delivered_date, attr.value 
+        FROM record AS rec 
+        JOIN attribute AS attr ON attr.record_id = rec.rec_id 
+        WHERE rec.delivered_date > ${lastNotifTimestamp / 1000000000} 
+        AND attr.key = 'titl'
+        ORDER BY rec.delivered_date DESC 
+        LIMIT 5;`;
+
+      const result = execSync(
+        `sqlite3 "${dbPath}" "${query}" 2>/dev/null`,
+        { encoding: "utf-8", timeout: 3000 }
+      ).trim();
+
+      if (!result) return;
+
+      const lines = result.split("\n");
+      for (const line of lines.reverse()) {
+        const parts = line.split("|");
+        if (parts.length < 3) continue;
+        const appId = parts[0] ?? "";
+        const title = parts[2] ?? "";
+        if (!title) continue;
+
+        const appName = appId.split(".").pop() ?? appId;
+        notify(`${appName}: ${title}`, "info");
+      }
+
+      lastNotifTimestamp = Date.now() * 1000000;
+    } catch {
+      // silently ignore errors
+    }
+  }, 5000);
 }
