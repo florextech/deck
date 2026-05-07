@@ -1,136 +1,17 @@
 {
   "actions": [
-    {
-      "id": "1",
-      "label": "GitHub",
-      "icon": "🐙",
-      "type": "url",
-      "payload": {
-        "type": "url",
-        "url": "https://github.com"
-      }
-    },
-    {
-      "id": "2",
-      "label": "Copy SSH Key",
-      "icon": "🔑",
-      "type": "copy",
-      "payload": {
-        "type": "copy",
-        "text": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI..."
-      }
-    },
-    {
-      "id": "3",
-      "label": "Restart Docker",
-      "icon": "🐳",
-      "type": "command",
-      "payload": {
-        "type": "command",
-        "command": "docker compose restart"
-      }
-    },
-    {
-      "id": "4",
-      "label": "Deploy",
-      "icon": "🚀",
-      "type": "command",
-      "payload": {
-        "type": "command",
-        "command": "cd ~/projects/myapp && pnpm deploy"
-      },
-      "color": "#bdf146"
-    },
-    {
-      "id": "5",
-      "label": "Figma",
-      "icon": "🎨",
-      "type": "url",
-      "payload": {
-        "type": "url",
-        "url": "https://figma.com"
-      }
-    },
-    {
-      "id": "6",
-      "label": "Run Tests",
-      "icon": "🧪",
-      "type": "command",
-      "payload": {
-        "type": "command",
-        "command": "cd ~/projects/myapp && pnpm test"
-      }
-    },
-    {
-      "id": "7",
-      "label": "VS Code",
-      "icon": "💻",
-      "type": "command",
-      "payload": {
-        "type": "command",
-        "command": "code ~/projects/myapp"
-      }
-    },
-    {
-      "id": "8",
-      "label": "Kill Port 3000",
-      "icon": "🔪",
-      "type": "command",
-      "payload": {
-        "type": "command",
-        "command": "lsof -ti:3000 | xargs kill -9"
-      },
-      "color": "#ef4444"
-    },
-    {
-      "id": "9",
-      "label": "Copy IP",
-      "icon": "📡",
-      "type": "command",
-      "payload": {
-        "type": "command",
-        "command": "ipconfig getifaddr en0 | pbcopy"
-      }
-    },
-    {
-      "id": "10",
-      "label": "Slack",
-      "icon": "💬",
-      "type": "url",
-      "payload": {
-        "type": "url",
-        "url": "https://slack.com"
-      }
-    },
-    {
-      "id": "11",
-      "label": "Notion",
-      "icon": "📝",
-      "type": "url",
-      "payload": {
-        "type": "url",
-        "url": "https://notion.so"
-      }
-    },
-    {
-      "id": "12",
-      "label": "Clear DNS",
-      "icon": "🧹",
-      "type": "command",
-      "payload": {
-        "type": "command",
-        "command": "sudo dscacheutil -flushcache"
-      }
-    },
-    {
-      "id": "ec0a568e-a55f-4362-a714-ca1f974a8078",
-      "label": "Safari",
-      "icon": "🧭",
-      "type": "command",
-      "payload": {
-        "type": "command",
-        "command": "open -a \"Safari\""
-      }
-    }
+    { "id": "1", "label": "GitHub", "icon": "https://cdn.simpleicons.org/github/fff", "type": "url", "payload": { "type": "url", "url": "https://github.com" } },
+    { "id": "2", "label": "Copy SSH Key", "type": "copy", "payload": { "type": "copy", "text": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI..." } },
+    { "id": "3", "label": "Restart Docker", "icon": "https://cdn.simpleicons.org/docker", "type": "command", "payload": { "type": "command", "command": "docker compose restart" } },
+    { "id": "4", "label": "Deploy", "type": "command", "payload": { "type": "command", "command": "cd ~/projects/myapp && pnpm deploy" }, "color": "#bdf146" },
+    { "id": "5", "label": "Figma", "icon": "https://cdn.simpleicons.org/figma", "type": "url", "payload": { "type": "url", "url": "https://figma.com" } },
+    { "id": "6", "label": "Run Tests", "type": "command", "payload": { "type": "command", "command": "cd ~/projects/myapp && pnpm test" } },
+    { "id": "7", "label": "VS Code", "icon": "https://cdn.simpleicons.org/visualstudiocode", "type": "command", "payload": { "type": "command", "command": "code ~/projects/myapp" } },
+    { "id": "8", "label": "Kill Port 3000", "type": "command", "payload": { "type": "command", "command": "lsof -ti:3000 | xargs kill -9" }, "color": "#ef4444" },
+    { "id": "9", "label": "Copy IP", "type": "command", "payload": { "type": "command", "command": "ipconfig getifaddr en0 | pbcopy" } },
+    { "id": "10", "label": "Slack", "icon": "https://cdn.simpleicons.org/slack", "type": "url", "payload": { "type": "url", "url": "https://slack.com" } },
+    { "id": "11", "label": "Notion", "icon": "https://cdn.simpleicons.org/notion/fff", "type": "url", "payload": { "type": "url", "url": "https://notion.so" } },
+    { "id": "12", "label": "Clear DNS", "type": "command", "payload": { "type": "command", "command": "sudo dscacheutil -flushcache" } },
+    { "id": "13", "label": "Safari", "icon": "https://cdn.simpleicons.org/safari", "type": "command", "payload": { "type": "command", "command": "open -a \"Safari\"" } }
   ]
 }
