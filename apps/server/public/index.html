@@ -52,6 +52,30 @@
       --green: #4ade80; --red: #fb7185; --yellow: #fbbf24;
       --orb1: rgba(236,72,153,0.08); --orb2: rgba(168,85,247,0.06);
     }
+    [data-theme="ice"] {
+      --bg: #070b10; --glass: rgba(103,232,249,0.04); --glass-strong: rgba(103,232,249,0.07);
+      --glass-border: rgba(103,232,249,0.08); --glass-border-active: rgba(103,232,249,0.35);
+      --glass-glow: rgba(103,232,249,0.12); --text: #ecfeff; --text-dim: #64748b;
+      --accent: #67e8f9; --accent-soft: rgba(103,232,249,0.1);
+      --green: #4ade80; --red: #f87171; --yellow: #fbbf24;
+      --orb1: rgba(34,211,238,0.08); --orb2: rgba(56,189,248,0.06);
+    }
+    [data-theme="gold"] {
+      --bg: #0c0a05; --glass: rgba(251,191,36,0.04); --glass-strong: rgba(251,191,36,0.07);
+      --glass-border: rgba(251,191,36,0.08); --glass-border-active: rgba(251,191,36,0.35);
+      --glass-glow: rgba(251,191,36,0.12); --text: #fefce8; --text-dim: #78716c;
+      --accent: #fbbf24; --accent-soft: rgba(251,191,36,0.1);
+      --green: #4ade80; --red: #f87171; --yellow: #fbbf24;
+      --orb1: rgba(245,158,11,0.08); --orb2: rgba(217,119,6,0.06);
+    }
+    [data-theme="crimson"] {
+      --bg: #0c0507; --glass: rgba(244,63,94,0.04); --glass-strong: rgba(244,63,94,0.07);
+      --glass-border: rgba(244,63,94,0.08); --glass-border-active: rgba(244,63,94,0.35);
+      --glass-glow: rgba(244,63,94,0.12); --text: #fff1f2; --text-dim: #6b7280;
+      --accent: #f43f5e; --accent-soft: rgba(244,63,94,0.1);
+      --green: #4ade80; --red: #fb7185; --yellow: #fbbf24;
+      --orb1: rgba(225,29,72,0.08); --orb2: rgba(190,18,60,0.06);
+    }
 
     body {
       background: var(--bg); color: var(--text);
@@ -103,7 +127,7 @@
     /* Settings section in config */
     .settings-section { margin-top:16px; padding-top:16px; border-top:1px solid var(--glass-border); }
     .settings-section h4 { font-size:11px; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:10px; }
-    .theme-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:8px; margin-bottom:12px; }
+    .theme-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:12px; }
     .theme-btn { width:100%; aspect-ratio:1; border-radius:10px; border:2px solid var(--glass-border); cursor:pointer; position:relative; transition:border-color .2s; }
     .theme-btn.active { border-color:var(--accent); }
     .theme-btn::after { content:attr(data-name); position:absolute; bottom:-14px; left:50%; transform:translateX(-50%); font-size:8px; color:var(--text-dim); white-space:nowrap; }
@@ -215,7 +239,10 @@
     let notifications = [];
     let soundEnabled = JSON.parse(localStorage.getItem('deck-sound') || 'true');
     let currentTheme = localStorage.getItem('deck-theme') || 'midnight';
-    let configTab = 'actions'; // 'actions' | 'settings'
+    let configTab = 'actions';
+
+    // Role: host (localhost) can edit, others can only execute
+    const isHost = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
 
     document.documentElement.dataset.theme = currentTheme;
 
@@ -270,26 +297,49 @@
 
     function renderConfig() {
       const el = document.getElementById('config');
-      // Tabs
-      let html = `<div style="display:flex;gap:4px;margin-bottom:12px;">`;
-      html += `<button onclick="configTab='actions';renderConfig()" style="flex:1;padding:10px;border-radius:10px;border:1px solid ${configTab==='actions'?'var(--accent)':'var(--glass-border)'};background:${configTab==='actions'?'var(--accent-soft)':'transparent'};color:${configTab==='actions'?'var(--accent)':'var(--text-dim)'};font-size:12px;font-weight:600;cursor:pointer">Actions</button>`;
-      html += `<button onclick="configTab='settings';renderConfig()" style="flex:1;padding:10px;border-radius:10px;border:1px solid ${configTab==='settings'?'var(--accent)':'var(--glass-border)'};background:${configTab==='settings'?'var(--accent-soft)':'transparent'};color:${configTab==='settings'?'var(--accent)':'var(--text-dim)'};font-size:12px;font-weight:600;cursor:pointer">Settings</button>`;
-      html += `</div>`;
+      let html = '';
 
-      if (configTab === 'actions') {
-        html += `<button class="add-btn" onclick="openModal()">+ Add action</button>`;
-        html += actions.map(a => {
-          const iconHtml = a.icon && a.icon.startsWith('http') ? `<img src="${a.icon}" style="width:20px;height:20px;border-radius:4px">` : `<i data-lucide="${{url:'globe',copy:'clipboard',command:'terminal'}[a.type]||'zap'}" style="width:18px;height:18px;color:var(--accent)"></i>`;
-          return `<div class="config-item">${iconHtml}<div class="info"><p>${a.label}</p><small>${a.type}</small></div><button class="del" onclick="del('${a.id}')">×</button></div>`;
-        }).join('');
+      if (isHost) {
+        // Host: tabs Actions / Settings
+        html += `<div style="display:flex;gap:4px;margin-bottom:12px;">`;
+        html += `<button onclick="configTab='actions';renderConfig()" style="flex:1;padding:10px;border-radius:10px;border:1px solid ${configTab==='actions'?'var(--accent)':'var(--glass-border)'};background:${configTab==='actions'?'var(--accent-soft)':'transparent'};color:${configTab==='actions'?'var(--accent)':'var(--text-dim)'};font-size:12px;font-weight:600;cursor:pointer">Actions</button>`;
+        html += `<button onclick="configTab='settings';renderConfig()" style="flex:1;padding:10px;border-radius:10px;border:1px solid ${configTab==='settings'?'var(--accent)':'var(--glass-border)'};background:${configTab==='settings'?'var(--accent-soft)':'transparent'};color:${configTab==='settings'?'var(--accent)':'var(--text-dim)'};font-size:12px;font-weight:600;cursor:pointer">Settings</button>`;
+        html += `</div>`;
+
+        if (configTab === 'actions') {
+          html += `<button class="add-btn" onclick="openModal()">+ Add action</button>`;
+          html += actions.map(a => {
+            const iconHtml = a.icon && a.icon.startsWith('http') ? `<img src="${a.icon}" style="width:20px;height:20px;border-radius:4px">` : `<i data-lucide="${{url:'globe',copy:'clipboard',command:'terminal'}[a.type]||'zap'}" style="width:18px;height:18px;color:var(--accent)"></i>`;
+            return `<div class="config-item">${iconHtml}<div class="info"><p>${a.label}</p><small>${a.type}</small></div><button class="del" onclick="del('${a.id}')">×</button></div>`;
+          }).join('');
+        } else {
+          html += renderSettings();
+        }
       } else {
-        html += `<div class="settings-section" style="border:none;margin:0;padding:0"><h4>Theme</h4><div class="theme-grid">`;
-        const themes = [{id:'midnight',color:'#a78bfa'},{id:'ocean',color:'#38bdf8'},{id:'ember',color:'#fb923c'},{id:'forest',color:'#4ade80'},{id:'rose',color:'#f472b6'}];
-        html += themes.map(t => `<button class="theme-btn ${currentTheme===t.id?'active':''}" style="background:${t.color}" data-name="${t.id}" onclick="setTheme('${t.id}')"></button>`).join('');
-        html += `</div><h4>Sound</h4><div class="sound-toggle"><span>Notification sound</span><button class="toggle ${soundEnabled?'on':''}" onclick="toggleSound()"></button></div></div>`;
+        // Tablet: only settings (theme + sound)
+        html += `<h3 style="font-size:14px;font-weight:600;margin-bottom:14px">Settings</h3>`;
+        html += renderSettings();
       }
+
       el.innerHTML = html;
       lucide.createIcons();
+    }
+
+    function renderSettings() {
+      const themes = [
+        {id:'midnight',color:'#a78bfa',name:'Midnight'},
+        {id:'ocean',color:'#38bdf8',name:'Ocean'},
+        {id:'ember',color:'#fb923c',name:'Ember'},
+        {id:'forest',color:'#4ade80',name:'Forest'},
+        {id:'rose',color:'#f472b6',name:'Rose'},
+        {id:'ice',color:'#67e8f9',name:'Ice'},
+        {id:'gold',color:'#fbbf24',name:'Gold'},
+        {id:'crimson',color:'#f43f5e',name:'Crimson'},
+      ];
+      let html = `<div style="border:none;margin:0;padding:0"><h4 style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px">Theme</h4><div class="theme-grid">`;
+      html += themes.map(t => `<button class="theme-btn ${currentTheme===t.id?'active':''}" style="background:${t.color}" data-name="${t.name}" onclick="setTheme('${t.id}')"></button>`).join('');
+      html += `</div><h4 style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;margin-top:16px">Sound</h4><div class="sound-toggle"><span>Notification sound</span><button class="toggle ${soundEnabled?'on':''}" onclick="toggleSound()"></button></div></div>`;
+      return html;
     }
 
     function setTheme(id) { currentTheme = id; document.documentElement.dataset.theme = id; localStorage.setItem('deck-theme', id); renderConfig(); }
