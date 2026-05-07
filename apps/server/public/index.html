@@ -132,10 +132,11 @@
     #modal-step2 .submit-btn:active { opacity:0.8; }
     #modal-step2 .back-btn { background:none; border:none; color:var(--text-dim); font-size:13px; cursor:pointer; padding:8px 0; display:block; width:100%; text-align:center; }
     /* Apps grid inside modal */
-    #apps-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; max-height:300px; overflow-y:auto; }
-    #apps-grid button { display:flex; flex-direction:column; align-items:center; gap:4px; padding:12px 6px; border-radius:12px; border:1px solid var(--glass-border); background:var(--glass); color:var(--text); cursor:pointer; font-size:10px; font-weight:500; text-align:center; word-break:break-word; }
+    #apps-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; max-height:50vh; overflow-y:auto; padding:4px 0; }
+    #apps-grid button { display:flex; flex-direction:column; align-items:center; gap:6px; padding:14px 8px; border-radius:12px; border:1px solid var(--glass-border); background:var(--glass); color:var(--text); cursor:pointer; font-size:10px; font-weight:500; text-align:center; word-break:break-word; line-height:1.2; transition:background .15s,border-color .15s; }
     #apps-grid button:active { background:var(--accent-soft); border-color:var(--accent); }
-    #apps-grid button i { width:22px; height:22px; color:var(--accent); }
+    #apps-grid button img { width:28px; height:28px; border-radius:6px; }
+    #apps-grid button i { color:var(--accent); }
 
     /* Form */
     #form { position:relative; z-index:1; display:none; padding:12px; }
@@ -326,13 +327,16 @@
       fetch(SERVER + '/apps').then(r => r.json()).then(data => {
         const grid = document.getElementById('apps-grid');
         if (!data.apps || !data.apps.length) { grid.innerHTML = '<p style="grid-column:1/-1;text-align:center;color:var(--text-dim);padding:20px;font-size:12px">Agent not connected.<br>Start agent on your PC.</p>'; return; }
-        grid.innerHTML = data.apps.map(a => `<button onclick="addApp('${a.name.replace(/'/g,"\\'")}','${a.command.replace(/'/g,"\\'")}')"><i data-lucide="app-window"></i>${a.name}</button>`).join('');
+        grid.innerHTML = data.apps.map(a => {
+          const iconHtml = a.icon ? `<img src="${a.icon}" alt="" onerror="this.replaceWith(document.createElement('i'));this.nextSibling||0;this.parentNode.querySelector('i')?.setAttribute('data-lucide','app-window');lucide.createIcons()">` : `<i data-lucide="app-window"></i>`;
+          return `<button onclick="addApp('${a.name.replace(/'/g,"\\'")}','${a.command.replace(/'/g,"\\'")}','${(a.icon||'').replace(/'/g,"\\'")}')">${iconHtml}<span>${a.name}</span></button>`;
+        }).join('');
         lucide.createIcons();
       }).catch(() => { document.getElementById('apps-grid').innerHTML = '<p style="grid-column:1/-1;text-align:center;color:var(--text-dim);padding:20px;font-size:12px">Could not load apps</p>'; });
     }
 
-    function addApp(name, command) {
-      actions.push({ id: crypto.randomUUID(), label: name, type: 'command', payload: { type: 'command', command } });
+    function addApp(name, command, icon) {
+      actions.push({ id: crypto.randomUUID(), label: name, icon: icon || undefined, type: 'command', payload: { type: 'command', command } });
       save(); closeModal();
     }
     document.getElementById('modal').onclick = (e) => { if (e.target.id === 'modal') closeModal(); };
