@@ -1,0 +1,52 @@
+{
+  "name": "deck",
+  "version": "0.1.0",
+  "description": "Stream Deck for your tablet",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build:mac": "electron-builder --mac",
+    "build:win": "electron-builder --win",
+    "build:linux": "electron-builder --linux"
+  },
+  "build": {
+    "appId": "com.deck.app",
+    "productName": "Deck",
+    "files": [
+      "main.js",
+      "agent.js",
+      "server.js",
+      "public/**/*",
+      "deck.config.json"
+    ],
+    "extraResources": [
+      { "from": "deck.config.json", "to": "deck.config.json" }
+    ],
+    "mac": {
+      "target": "dmg",
+      "icon": "build/icon.icns"
+    },
+    "win": {
+      "target": "nsis",
+      "icon": "build/icon.ico"
+    },
+    "linux": {
+      "target": "AppImage"
+    },
+    "nsis": {
+      "oneClick": true,
+      "allowToChangeInstallationDirectory": false
+    }
+  },
+  "dependencies": {
+    "express": "4.21.2",
+    "socket.io": "4.8.1",
+    "socket.io-client": "4.8.1",
+    "cors": "2.8.5",
+    "qrcode-terminal": "0.12.0"
+  },
+  "devDependencies": {
+    "electron": "33.4.0",
+    "electron-builder": "25.1.8"
+  }
+}

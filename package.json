@@ -10,6 +10,8 @@
     "dev:agent": "pnpm --filter @open-deck/agent dev",
     "build": "pnpm -r build",
     "build:standalone": "tsx scripts/build-standalone.ts",
+    "build:installer": "cd electron && npm install && npm run build:mac",
+    "build:installer:win": "cd electron && npm install && npm run build:win",
     "lint": "pnpm -r lint",
     "test": "vitest run",
     "typecheck": "pnpm -r typecheck"
