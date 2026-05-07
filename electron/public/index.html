@@ -244,6 +244,36 @@
     // Role: host (localhost) can edit, others can only execute
     const isHost = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
 
+    // Workspaces
+    let workspaces = JSON.parse(localStorage.getItem('deck-workspaces') || '[]');
+    let activeWorkspace = localStorage.getItem('deck-active-workspace') || location.origin;
+    let socket;
+
+    function connectTo(serverUrl) {
+      if (socket) socket.disconnect();
+      activeWorkspace = serverUrl;
+      localStorage.setItem('deck-active-workspace', serverUrl);
+      actions = [];
+      notifications = [];
+      renderGrid();
+      renderNotifs();
+
+      socket = io(serverUrl, { transports: ['polling', 'websocket'] });
+      socket.on('connect', () => addNotif('connected to ' + serverUrl, 'success'));
+      socket.on('connect_error', () => addNotif('cannot reach ' + serverUrl, 'error'));
+      socket.on('disconnect', () => addNotif('disconnected', 'warning'));
+      socket.on('config:actions', (data) => { actions = data; renderGrid(); renderConfig(); });
+      socket.on('notification:new', (n) => { addNotif(n.title, n.level); playNotifSound(); });
+    }
+
+    // Auto-add current origin as workspace if not in list
+    if (!workspaces.find(w => w.url === location.origin)) {
+      workspaces.push({ name: location.hostname === 'localhost' ? 'This PC' : location.hostname, url: location.origin });
+      localStorage.setItem('deck-workspaces', JSON.stringify(workspaces));
+    }
+
+    connectTo(activeWorkspace);
+
     document.documentElement.dataset.theme = currentTheme;
 
     // Sound
@@ -336,10 +366,34 @@
         {id:'gold',color:'#fbbf24',name:'Gold'},
         {id:'crimson',color:'#f43f5e',name:'Crimson'},
       ];
-      let html = `<div style="border:none;margin:0;padding:0"><h4 style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px">Theme</h4><div class="theme-grid">`;
+      let html = `<div style="border:none;margin:0;padding:0">`;
+      // Workspaces
+      html += `<h4 style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px">Workspaces</h4>`;
+      html += workspaces.map(w => `<div class="config-item" style="cursor:pointer;${w.url===activeWorkspace?'border-color:var(--accent);background:var(--accent-soft)':''}" onclick="switchWorkspace('${w.url}')"><div style="width:8px;height:8px;border-radius:50%;background:${w.url===activeWorkspace?'var(--green)':'var(--text-dim)'};flex-shrink:0"></div><div class="info"><p>${w.name}</p><small>${w.url}</small></div><button class="del" onclick="event.stopPropagation();removeWorkspace('${w.url}')">×</button></div>`).join('');
+      html += `<button class="add-btn" onclick="addWorkspacePrompt()" style="margin-top:8px;padding:12px">+ Add PC</button>`;
+      // Theme
+      html += `<h4 style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;margin-top:20px">Theme</h4><div class="theme-grid">`;
       html += themes.map(t => `<button class="theme-btn ${currentTheme===t.id?'active':''}" style="background:${t.color}" data-name="${t.name}" onclick="setTheme('${t.id}')"></button>`).join('');
       html += `</div><h4 style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;margin-top:16px">Sound</h4><div class="sound-toggle"><span>Notification sound</span><button class="toggle ${soundEnabled?'on':''}" onclick="toggleSound()"></button></div></div>`;
       return html;
+    }
+
+    function switchWorkspace(url) { connectTo(url); renderConfig(); }
+    function removeWorkspace(url) {
+      if (workspaces.length <= 1) return;
+      workspaces = workspaces.filter(w => w.url !== url);
+      localStorage.setItem('deck-workspaces', JSON.stringify(workspaces));
+      if (activeWorkspace === url) connectTo(workspaces[0].url);
+      renderConfig();
+    }
+    function addWorkspacePrompt() {
+      const name = prompt('Workspace name (e.g. Work PC)');
+      if (!name) return;
+      const url = prompt('Server URL (e.g. http://192.168.1.50:4000)');
+      if (!url) return;
+      workspaces.push({ name, url });
+      localStorage.setItem('deck-workspaces', JSON.stringify(workspaces));
+      renderConfig();
     }
 
     function setTheme(id) { currentTheme = id; document.documentElement.dataset.theme = id; localStorage.setItem('deck-theme', id); renderConfig(); }
@@ -347,7 +401,7 @@
 
     function exec(id) { socket.emit('action:execute', id); }
     function del(id) { actions = actions.filter(a => a.id !== id); save(); }
-    function save() { fetch(SERVER + '/config', { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify({actions}) }); renderGrid(); renderConfig(); }
+    function save() { fetch(activeWorkspace + '/config', { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify({actions}) }); renderGrid(); renderConfig(); }
 
     function showDeck() { document.getElementById('grid').classList.remove('hidden'); document.getElementById('config').classList.remove('active'); document.getElementById('nav-deck').classList.add('active'); document.getElementById('nav-config').classList.remove('active'); }
     function showConfig() { document.getElementById('grid').classList.add('hidden'); document.getElementById('config').classList.add('active'); document.getElementById('nav-deck').classList.remove('active'); document.getElementById('nav-config').classList.add('active'); renderConfig(); }
@@ -376,7 +430,7 @@
     });
 
     function loadApps() {
-      fetch(SERVER + '/apps').then(r => r.json()).then(data => {
+      fetch(activeWorkspace + '/apps').then(r => r.json()).then(data => {
         const grid = document.getElementById('apps-grid');
         if (!data.apps || !data.apps.length) { grid.innerHTML = '<p style="grid-column:1/-1;text-align:center;color:var(--text-dim);padding:20px;font-size:12px">Agent not connected.<br>Start agent on your PC.</p>'; return; }
         grid.innerHTML = data.apps.map(a => {
