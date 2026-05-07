@@ -63,8 +63,6 @@
     body::before { width:50vw; height:50vw; top:-20%; left:-15%; background:radial-gradient(circle, var(--orb1), transparent 70%); filter:blur(60px); }
     body::after { width:45vw; height:45vw; bottom:-15%; right:-10%; background:radial-gradient(circle, var(--orb2), transparent 70%); filter:blur(60px); }
 
-    --radius: 14px;
-
     /* Notification panel */
     #status-bar { position:relative; z-index:1; margin:10px 10px 0; min-height:48px; max-height:110px; background:var(--glass); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); border:1px solid var(--glass-border); border-radius:14px; padding:10px 14px; font-size:12px; flex-shrink:0; overflow-y:auto; }
     #status-bar::-webkit-scrollbar { width:0; }
@@ -230,8 +228,8 @@
     // Tile icon: URL image > emoji > Lucide icon
     function getTileIcon(a) {
       if (a.icon && a.icon.startsWith('http')) return `<div class="tile-icon"><img src="${a.icon}" alt=""></div>`;
-      if (a.icon && !a.icon.startsWith('<')) return `<div class="tile-icon" style="font-size:28px">${a.icon}</div>`;
-      // Lucide icon name based on type
+      if (a.icon && a.icon.length > 0 && a.icon.length <= 2) return `<div class="tile-icon" style="font-size:28px">${a.icon}</div>`;
+      // Default: Lucide icon
       const lucideMap = { url: 'globe', copy: 'clipboard', command: 'terminal' };
       return `<div class="tile-icon"><i data-lucide="${lucideMap[a.type] || 'zap'}"></i></div>`;
     }
