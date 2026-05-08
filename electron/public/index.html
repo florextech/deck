@@ -731,12 +731,24 @@
       fetch(activeWorkspace + '/apps').then(r => r.json()).then(data => {
         const grid = document.getElementById('apps-grid');
         if (!data.apps || !data.apps.length) { grid.innerHTML = '<p style="grid-column:1/-1;text-align:center;color:var(--text-dim);padding:20px;font-size:12px">Agent not connected.<br>Start agent on your PC.</p>'; return; }
-        grid.innerHTML = data.apps.map(a => {
-          const iconHtml = a.icon ? `<img src="${a.icon}" alt="" onerror="this.style.display='none'">` : `<i data-lucide="app-window"></i>`;
-          return `<button onclick="addApp('${a.name.replace(/'/g,"\\'")}','${a.command.replace(/'/g,"\\'")}','${(a.icon||'').replace(/'/g,"\\'")}')">${iconHtml}<span>${a.name}</span></button>`;
+        window._detectedApps = data.apps;
+        grid.innerHTML = data.apps.map((a, i) => {
+          const iconHtml = a.icon ? `<img src="${a.icon}" alt="">` : '';
+          return `<button data-app-idx="${i}"><i data-lucide="app-window"></i>${iconHtml}<span>${a.name}</span></button>`;
         }).join('');
+        // Hide broken images
+        grid.querySelectorAll('img').forEach(img => { img.onerror = () => img.style.display = 'none'; });
         lucide.createIcons();
       }).catch(() => { document.getElementById('apps-grid').innerHTML = '<p style="grid-column:1/-1;text-align:center;color:var(--text-dim);padding:20px;font-size:12px">Could not load apps</p>'; });
+    }
+
+    // Event delegation for app picker
+    document.getElementById('apps-grid').addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-app-idx]');
+      if (!btn || !window._detectedApps) return;
+      const app = window._detectedApps[parseInt(btn.dataset.appIdx)];
+      if (app) addApp(app.name, app.command, app.icon || '');
+    });
     }
 
     function addApp(name, command, icon) {
