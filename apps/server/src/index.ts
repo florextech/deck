@@ -194,11 +194,24 @@ async function loadPlugins() {
 }
 
 function startWidget(id: string, config: { interval: number; getData: () => unknown }) {
-  setInterval(() => {
+  const timer = setInterval(() => {
     const data = config.getData();
     io.emit("widget:update" as keyof ServerToClientEvents, { id, data } as never);
   }, config.interval);
+  widgetTimers.push(timer);
 }
+
+const widgetTimers: ReturnType<typeof setInterval>[] = [];
+
+app.post("/plugins/reload", async (_req, res) => {
+  // Clear existing widgets and timers
+  widgetTimers.forEach(t => clearInterval(t));
+  widgetTimers.length = 0;
+  for (const k of Object.keys(widgets)) delete widgets[k];
+  for (const k of Object.keys(customActions)) delete customActions[k];
+  await loadPlugins();
+  res.json({ ok: true });
+});
 
 app.get("/widgets", (_req, res) => {
   const data: Record<string, unknown> = {};

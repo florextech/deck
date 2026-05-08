@@ -713,20 +713,26 @@
       if (!el) return;
       fetch('/plugins/store').then(r => r.json()).then(data => {
         if (!data.plugins || !data.plugins.length) { el.innerHTML = `<p style="text-align:center;padding:20px;color:var(--text-dim)">${lang==='es'?'No hay plugins disponibles':'No plugins available'}</p>`; return; }
-        const platformIcons = {macos:'🍎',windows:'🪟',linux:'🐧'};
         el.innerHTML = data.plugins.map(p => {
-          const platformBadges = (p.platforms||[]).map(pl => `<span style="font-size:9px;background:${pl===p.currentPlatform?'var(--green)':'var(--glass-strong)'};color:${pl===p.currentPlatform?'#000':'var(--text-dim)'};padding:2px 5px;border-radius:4px">${platformIcons[pl]||''} ${pl}</span>`).join(' ');
+          const platformBadges = (p.platforms||[]).map(pl => `<span style="font-size:9px;background:${pl===p.currentPlatform?'var(--accent-soft)':'var(--glass-strong)'};color:${pl===p.currentPlatform?'var(--accent)':'var(--text-dim)'};padding:2px 6px;border-radius:4px;text-transform:capitalize">${pl}</span>`).join(' ');
           const unsupported = p.platforms && p.platforms.length && !p.platforms.includes(p.currentPlatform);
           let actionBtn = '';
           if (p.installed) {
-            actionBtn = `<button data-toggle-id="${p.id}" class="toggle ${p.disabled?'':'on'}" style="width:36px;height:20px;min-width:36px;border-radius:10px;background:${p.disabled?'var(--glass-border)':'var(--accent)'};cursor:pointer;position:relative;border:none;margin-right:6px" title="${p.disabled?(lang==='es'?'Activar':'Enable'):(lang==='es'?'Desactivar':'Disable')}"><span style="position:absolute;top:3px;left:${p.disabled?'3px':'17px'};width:14px;height:14px;border-radius:50%;background:#fff;transition:left .2s"></span></button><button data-uninstall-id="${p.id}" style="padding:6px 10px;border-radius:8px;border:1px solid var(--red);background:transparent;color:var(--red);font-size:10px;font-weight:600;cursor:pointer">${lang==='es'?'Quitar':'Remove'}</button>`;
+            const toggleLabel = p.disabled?(lang==='es'?'Off':'Off'):(lang==='es'?'On':'On');
+            actionBtn = `<button data-toggle-id="${p.id}" style="padding:5px 10px;border-radius:8px;border:1px solid ${p.disabled?'var(--glass-border)':'var(--accent)'};background:${p.disabled?'transparent':'var(--accent-soft)'};color:${p.disabled?'var(--text-dim)':'var(--accent)'};font-size:10px;font-weight:600;cursor:pointer;min-width:36px">${toggleLabel}</button><button data-uninstall-id="${p.id}" style="padding:5px 10px;border-radius:8px;border:1px solid var(--red);background:transparent;color:var(--red);font-size:10px;font-weight:600;cursor:pointer;margin-left:4px">${lang==='es'?'Quitar':'Remove'}</button>`;
           } else if (unsupported) {
             actionBtn = `<span style="font-size:10px;color:var(--yellow)">${lang==='es'?'No soportado':'Unsupported'}</span>`;
           } else {
             actionBtn = `<button data-install-id="${p.id}" data-install-url="${p.url}" data-install-platforms="${(p.platforms||[]).join(',')}" style="padding:8px 14px;border-radius:8px;border:1px solid var(--accent);background:var(--accent-soft);color:var(--accent);font-size:11px;font-weight:600;cursor:pointer">${lang==='es'?'Instalar':'Install'}</button>`;
           }
-          return `<div style="margin-bottom:10px;border-radius:14px;border:1px solid var(--glass-border);background:var(--glass);overflow:hidden"><div style="display:flex;align-items:center;gap:10px;padding:12px 14px"><div style="flex:1;min-width:0"><p style="font-size:13px;font-weight:500">${p.name} ${p.official?'<span style="font-size:9px;background:var(--accent-soft);color:var(--accent);padding:2px 6px;border-radius:4px;margin-left:4px">Official</span>':''}</p><small style="color:var(--text-dim)">${p.description}</small>${platformBadges?`<div style="margin-top:4px">${platformBadges}</div>`:''}</div><div style="display:flex;align-items:center;gap:4px">${actionBtn}</div></div>${p.readme?`<details style="padding:0 14px 12px"><summary style="font-size:11px;color:var(--accent);cursor:pointer;padding:4px 0">${lang==='es'?'Ver detalles':'View details'}</summary><div style="margin-top:6px;font-size:11px;color:var(--text);line-height:1.5">${renderMd(p.readme)}</div></details>`:''}</div>`;
+          return `<div style="margin-bottom:10px;border-radius:14px;border:1px solid var(--glass-border);background:var(--glass);overflow:hidden"><div style="display:flex;align-items:center;gap:10px;padding:12px 14px"><div style="flex:1;min-width:0"><p style="font-size:13px;font-weight:500">${p.name} ${p.official?'<span style="font-size:9px;background:var(--accent-soft);color:var(--accent);padding:2px 6px;border-radius:4px;margin-left:4px">Official</span>':''}</p><small style="color:var(--text-dim)">${p.description}</small>${platformBadges?`<div style="margin-top:4px;display:flex;gap:4px;flex-wrap:wrap">${platformBadges}</div>`:''}</div><div style="display:flex;align-items:center;gap:4px">${actionBtn}</div></div>${p.readme?`<details style="padding:0 14px 12px"><summary style="font-size:11px;color:var(--accent);cursor:pointer;padding:4px 0">${lang==='es'?'Ver detalles':'View details'}</summary><div style="margin-top:6px;font-size:11px;color:var(--text);line-height:1.5">${renderMd(p.readme)}</div></details>`:''}</div>`;
         }).join('');
+        // Reload button
+        const hasInstalled = data.plugins.some(p => p.installed);
+        if (hasInstalled) {
+          el.insertAdjacentHTML('afterbegin', `<button id="plugins-reload-btn" style="width:100%;padding:10px;margin-bottom:12px;border-radius:10px;border:1px solid var(--accent);background:var(--accent-soft);color:var(--accent);font-size:11px;font-weight:600;cursor:pointer">${lang==='es'?'Recargar plugins':'Reload plugins'}</button>`);
+          document.getElementById('plugins-reload-btn').addEventListener('click', reloadPlugins);
+        }
         el.querySelectorAll('[data-install-id]').forEach(btn => {
           btn.addEventListener('click', () => installPlugin(btn.dataset.installId, btn.dataset.installUrl, btn.dataset.installPlatforms));
         });
@@ -744,15 +750,22 @@
       if (platforms) body.platforms = platforms.split(',').filter(Boolean);
       fetch('/plugins/install', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) })
         .then(r => r.json())
-        .then(d => { if (d.ok) { addNotif(lang==='es'?'Plugin instalado. Reinicia para activar.':'Plugin installed. Restart to activate.', 'success'); loadPluginStore(); } else { addNotif(d.error || 'Error', 'error'); } })
+        .then(d => { if (d.ok) { addNotif(lang==='es'?'Plugin instalado. Usa "Recargar plugins" para activar.':'Plugin installed. Use "Reload plugins" to activate.', 'success'); loadPluginStore(); } else { addNotif(d.error || 'Error', 'error'); } })
         .catch(() => addNotif('Install failed', 'error'));
     }
 
     function togglePlugin(id) {
       fetch('/plugins/toggle', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({id}) })
         .then(r => r.json())
-        .then(d => { if (d.ok) { addNotif(d.disabled?(lang==='es'?'Plugin desactivado. Reinicia para aplicar.':'Plugin disabled. Restart to apply.'):(lang==='es'?'Plugin activado. Reinicia para aplicar.':'Plugin enabled. Restart to apply.'), 'info'); loadPluginStore(); } else { addNotif(d.error || 'Error', 'error'); } })
+        .then(d => { if (d.ok) { addNotif(d.disabled?(lang==='es'?'Plugin desactivado.':'Plugin disabled.'):(lang==='es'?'Plugin activado.':'Plugin enabled.'), 'info'); loadPluginStore(); } else { addNotif(d.error || 'Error', 'error'); } })
         .catch(() => addNotif('Toggle failed', 'error'));
+    }
+
+    function reloadPlugins() {
+      fetch('/plugins/reload', { method: 'POST' })
+        .then(r => r.json())
+        .then(d => { if (d.ok) { addNotif(lang==='es'?'Plugins recargados':'Plugins reloaded', 'success'); } })
+        .catch(() => addNotif('Reload failed', 'error'));
     }
 
     function uninstallPlugin(id) {
