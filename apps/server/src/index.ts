@@ -169,6 +169,7 @@ function loadPlugins() {
     const files = readdirSync(pluginsDir).filter(f => f.endsWith(".js"));
     for (const file of files) {
       try {
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
         const plugin = require(resolve(pluginsDir, file));
         plugin.setup(deck);
         console.log(`[deck] Plugin loaded: ${plugin.name}`);
