@@ -121,6 +121,7 @@
     .tile .tile-icon svg { width:28px; height:28px; }
     .tile .tile-icon img { width:32px; height:32px; border-radius:6px; object-fit:contain; filter:brightness(0) invert(1); }
     .tile span { font-size:10px; font-weight:500; text-align:center; line-height:1.2; word-break:break-word; max-width:100%; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; color:var(--text); opacity:.85; }
+    .tile-widget { font-size:18px; font-weight:700; color:var(--accent); font-family:-apple-system,system-ui,monospace; }
 
     /* Config */
     #config { position:relative; z-index:1; flex:1; overflow-y:auto; padding:12px; display:none; }
@@ -226,6 +227,7 @@
 </head>
 <body>
   <div id="status-bar"><div class="notif-line"><span class="notif-empty">waiting for notifications...</span></div></div>
+  <div id="widgets-bar" style="display:none;padding:8px 12px 0;position:relative;z-index:1;overflow-x:auto;white-space:nowrap;-webkit-overflow-scrolling:touch"></div>
   <div id="grid-wrapper"><div id="grid-pages"></div></div>
   <div id="page-dots"></div>
   <div id="config"></div>
@@ -404,6 +406,7 @@
     let activeWorkspace = localStorage.getItem('deck-active-workspace') || location.origin;
     let activeCategory = 'all';
     let currentPage = 0;
+    let widgets = {};
     let socket;
 
     function connectTo(serverUrl) {
@@ -428,6 +431,7 @@
       socket.on('disconnect', () => addNotif(t('disconnected'), 'warning'));
       socket.on('config:actions', (data) => { actions = data; renderGrid(); renderConfig(); });
       socket.on('notification:new', (n) => { addNotif(n.title, n.level); playNotifSound(); });
+      socket.on('widget:update', (w) => { widgets[w.id] = w.data; renderWidgets(); });
     }
     // Auto-add current origin as workspace if not in list
     if (!workspaces.find(w => w.url === location.origin)) {
@@ -472,6 +476,18 @@
       el.innerHTML = notifications.slice(0, 8).map(n =>
         `<div class="notif-line"><span class="notif-dot ${n.level}"></span><span class="notif-text">${n.text}</span><span class="notif-time">${n.time}</span></div>`
       ).join('');
+    }
+
+    function renderWidgets() {
+      const bar = document.getElementById('widgets-bar');
+      const keys = Object.keys(widgets);
+      if (!keys.length) { bar.style.display = 'none'; return; }
+      bar.style.display = '';
+      bar.innerHTML = keys.map(id => {
+        const d = widgets[id];
+        const display = typeof d === 'object' ? Object.entries(d).map(([k,v]) => `<span style="display:inline-block;margin-right:12px"><small style="color:var(--text-dim);font-size:9px;text-transform:uppercase">${k}</small><br><strong style="color:var(--accent);font-size:14px">${v}</strong></span>`).join('') : `<strong style="color:var(--accent)">${d}</strong>`;
+        return `<div style="display:inline-block;padding:8px 14px;border-radius:12px;border:1px solid var(--glass-border);background:var(--glass);margin-right:8px;vertical-align:top">${display}</div>`;
+      }).join('');
     }
 
     // Tile icon: custom image URL only if set, otherwise Lucide
