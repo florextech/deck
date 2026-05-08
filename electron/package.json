@@ -26,7 +26,10 @@
       "deck.config.json"
     ],
     "extraResources": [
-      { "from": "deck.config.json", "to": "deck.config.json" }
+      {
+        "from": "deck.config.json",
+        "to": "deck.config.json"
+      }
     ],
     "mac": {
       "target": "dmg",
@@ -46,11 +49,12 @@
     }
   },
   "dependencies": {
-    "express": "4.21.2",
-    "socket.io": "4.8.1",
-    "socket.io-client": "4.8.1",
     "cors": "2.8.5",
-    "qrcode-terminal": "0.12.0"
+    "express": "4.21.2",
+    "qrcode": "^1.5.4",
+    "qrcode-terminal": "0.12.0",
+    "socket.io": "4.8.1",
+    "socket.io-client": "4.8.1"
   },
   "devDependencies": {
     "electron": "33.4.0",
