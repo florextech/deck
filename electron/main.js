@@ -113,6 +113,12 @@ app.whenReady().then(() => {
   const pluginsDir = join(app.getPath("userData"), "plugins");
   const pluginsStatePath = join(app.getPath("userData"), "plugins-state.json");
   const REGISTRY_URL = "https://raw.githubusercontent.com/florextech/deck-plugins/main/registry.json";
+  const LOCAL_REGISTRY = [
+    { id: "clock", name: "Clock", description: "Shows current time and date", author: "Deck", version: "1.0.0", official: true, tags: ["widget","utility"], platforms: ["macos","windows","linux"], url: "https://raw.githubusercontent.com/florextech/deck/main/plugins-available/clock.js" },
+    { id: "system-monitor", name: "System Monitor", description: "CPU, RAM usage and uptime widget", author: "Deck", version: "1.0.0", official: true, tags: ["widget","system"], platforms: ["macos","windows","linux"], url: "https://raw.githubusercontent.com/florextech/deck/main/plugins-available/system-monitor.js" },
+    { id: "spotify", name: "Spotify", description: "Control Spotify playback and see now playing", author: "Deck", version: "1.0.0", official: true, tags: ["media","music"], platforms: ["macos"], url: "https://raw.githubusercontent.com/florextech/deck/main/plugins-available/spotify.js" },
+    { id: "pomodoro", name: "Pomodoro Timer", description: "25 min focus timer with notification", author: "Deck", version: "1.0.0", official: true, tags: ["productivity","timer"], platforms: ["macos","windows","linux"], url: "https://raw.githubusercontent.com/florextech/deck/main/plugins-available/pomodoro.js" },
+  ];
 
   function loadPluginsState() { try { return JSON.parse(readFileSync(pluginsStatePath, "utf-8")); } catch { return {}; } }
   function savePluginsState(state) { writeFileSync(pluginsStatePath, JSON.stringify(state, null, 2)); }
@@ -122,16 +128,15 @@ app.whenReady().then(() => {
     const installed = existsSync(pluginsDir) ? readdirSync(pluginsDir).filter(f => f.endsWith(".js")).map(f => f.replace(".js", "")) : [];
     const state = loadPluginsState();
     const platform = currentPlatform();
+    let registryPlugins = LOCAL_REGISTRY;
     try {
       const r = await fetch(REGISTRY_URL, { signal: AbortSignal.timeout(5000) });
       const data = await r.json();
-      const plugins = data.plugins.map(p => ({ ...p, installed: installed.includes(p.id), disabled: !!state[p.id]?.disabled, currentPlatform: platform }));
-      for (const id of installed) { if (!plugins.find(p => p.id === id)) plugins.push({ id, name: id, description: "Installed locally", installed: true, disabled: !!state[id]?.disabled, currentPlatform: platform }); }
-      res.json({ plugins });
-    } catch {
-      const plugins = installed.map(id => ({ id, name: id, description: "Installed locally", installed: true, disabled: !!state[id]?.disabled, currentPlatform: platform }));
-      res.json({ plugins, offline: true });
-    }
+      if (data.plugins && data.plugins.length) registryPlugins = data.plugins;
+    } catch {}
+    const plugins = registryPlugins.map(p => ({ ...p, installed: installed.includes(p.id), disabled: !!state[p.id]?.disabled, currentPlatform: platform }));
+    for (const id of installed) { if (!plugins.find(p => p.id === id)) plugins.push({ id, name: id, description: "Installed locally", installed: true, disabled: !!state[id]?.disabled, currentPlatform: platform }); }
+    res.json({ plugins });
   });
 
   srv.post("/plugins/toggle", (req, res) => {
