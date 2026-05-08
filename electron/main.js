@@ -89,7 +89,8 @@ app.whenReady().then(() => {
     const ip = localIps[0] || "localhost";
     const remoteIp = (req.ip || req.socket.remoteAddress || "").replace("::ffff:", "");
     const isLocal = remoteIp === "127.0.0.1" || remoteIp === "::1" || localIps.includes(remoteIp);
-    res.json({ status: "ok", agent: true, actions: actions.length, isLocal, url: `http://${ip}:${PORT}` });
+    const pkg = JSON.parse(readFileSync(join(__dirname, "package.json"), "utf-8"));
+    res.json({ status: "ok", agent: true, actions: actions.length, isLocal, url: `http://${ip}:${PORT}`, version: pkg.version });
   });
   srv.get("/qr", async (_, res) => {
     const ip = getLocalIP();
@@ -107,6 +108,67 @@ app.whenReady().then(() => {
     notify(title, level);
     res.json({ ok: true });
   });
+
+  // Plugin system
+  const pluginsDir = join(app.getPath("userData"), "plugins");
+  const pluginsStatePath = join(app.getPath("userData"), "plugins-state.json");
+  const REGISTRY_URL = "https://raw.githubusercontent.com/florextech/deck-plugins/main/registry.json";
+
+  function loadPluginsState() { try { return JSON.parse(readFileSync(pluginsStatePath, "utf-8")); } catch { return {}; } }
+  function savePluginsState(state) { writeFileSync(pluginsStatePath, JSON.stringify(state, null, 2)); }
+  function currentPlatform() { return os === "darwin" ? "macos" : os === "win32" ? "windows" : "linux"; }
+
+  srv.get("/plugins/store", async (_, res) => {
+    const installed = existsSync(pluginsDir) ? readdirSync(pluginsDir).filter(f => f.endsWith(".js")).map(f => f.replace(".js", "")) : [];
+    const state = loadPluginsState();
+    const platform = currentPlatform();
+    try {
+      const r = await fetch(REGISTRY_URL, { signal: AbortSignal.timeout(5000) });
+      const data = await r.json();
+      const plugins = data.plugins.map(p => ({ ...p, installed: installed.includes(p.id), disabled: !!state[p.id]?.disabled, currentPlatform: platform }));
+      for (const id of installed) { if (!plugins.find(p => p.id === id)) plugins.push({ id, name: id, description: "Installed locally", installed: true, disabled: !!state[id]?.disabled, currentPlatform: platform }); }
+      res.json({ plugins });
+    } catch {
+      const plugins = installed.map(id => ({ id, name: id, description: "Installed locally", installed: true, disabled: !!state[id]?.disabled, currentPlatform: platform }));
+      res.json({ plugins, offline: true });
+    }
+  });
+
+  srv.post("/plugins/toggle", (req, res) => {
+    const { id } = req.body;
+    if (!id) return res.status(400).json({ error: "id required" });
+    const state = loadPluginsState();
+    state[id] = { disabled: !state[id]?.disabled };
+    savePluginsState(state);
+    res.json({ ok: true, disabled: state[id].disabled });
+  });
+
+  srv.post("/plugins/install", async (req, res) => {
+    try {
+      const { id, url, platforms } = req.body;
+      if (!id || !url) return res.status(400).json({ error: "id and url required" });
+      if (platforms && platforms.length && !platforms.includes(currentPlatform())) return res.status(400).json({ error: `Not supported on ${currentPlatform()}` });
+      if (!url.startsWith("https://raw.githubusercontent.com/")) return res.status(403).json({ error: "Only GitHub raw URLs allowed" });
+      const r = await fetch(url);
+      const code = await r.text();
+      if (!code.includes("module.exports") || !code.includes("setup")) return res.status(400).json({ error: "Invalid plugin" });
+      const { mkdirSync } = require("fs");
+      if (!existsSync(pluginsDir)) mkdirSync(pluginsDir, { recursive: true });
+      writeFileSync(join(pluginsDir, `${id}.js`), code);
+      res.json({ ok: true });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+  });
+
+  srv.post("/plugins/uninstall", (req, res) => {
+    const { id } = req.body;
+    if (!id) return res.status(400).json({ error: "id required" });
+    const filePath = join(pluginsDir, `${id}.js`);
+    if (existsSync(filePath)) { const { unlinkSync } = require("fs"); unlinkSync(filePath); }
+    res.json({ ok: true });
+  });
+
+  srv.post("/plugins/reload", (_, res) => { res.json({ ok: true }); });
+  srv.get("/widgets", (_, res) => { res.json({}); });
 
   httpServer.listen(PORT, "0.0.0.0", () => console.log(`[deck] :${PORT}`));
 

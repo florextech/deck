@@ -691,6 +691,7 @@
       html += `<div style="display:flex;gap:8px"><button onclick="setLang('en')" style="flex:1;padding:10px;border-radius:10px;border:1px solid ${lang==='en'?'var(--accent)':'var(--glass-border)'};background:${lang==='en'?'var(--accent-soft)':'transparent'};color:${lang==='en'?'var(--accent)':'var(--text-dim)'};font-size:12px;font-weight:600;cursor:pointer">English</button><button onclick="setLang('es')" style="flex:1;padding:10px;border-radius:10px;border:1px solid ${lang==='es'?'var(--accent)':'var(--glass-border)'};background:${lang==='es'?'var(--accent-soft)':'transparent'};color:${lang==='es'?'var(--accent)':'var(--text-dim)'};font-size:12px;font-weight:600;cursor:pointer">Español</button></div>`;
       html += `<h4 style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;margin-top:16px">${t('sound')}</h4><div class="sound-toggle"><span>${t('notifSound')}</span><button class="toggle ${soundEnabled?'on':''}" onclick="toggleSound()"></button></div>`;
       html += `<h4 style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;margin-top:16px">Updates</h4><div id="update-section" style="font-size:12px;color:var(--text-dim)"></div>`;
+      html += `<p id="version-label" style="margin-top:16px;font-size:10px;color:var(--text-dim);text-align:center"></p>`;
       html += `</div>`;
       return html;
     }
@@ -784,7 +785,8 @@
       el.innerHTML = `<span style="color:var(--text-dim)">${lang==='es'?'Verificando...':'Checking...'}</span>`;
       fetch('/health').then(r=>r.json()).then(h => {
         const currentV = h.version || CURRENT_VERSION;
-        el.dataset.version = currentV;
+        const vLabel = document.getElementById('version-label');
+        if (vLabel) vLabel.textContent = `Deck v${currentV}`;
         fetch(`https://api.github.com/repos/${REPO}/releases/latest`).then(r => r.json()).then(d => {
           const latest = (d.tag_name || '').replace('v', '');
           if (!latest || latest === currentV) {
