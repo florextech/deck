@@ -1,7 +1,7 @@
 import express from "express";
 import { createServer } from "node:http";
 import { Server } from "socket.io";
-import { readFileSync, writeFileSync, watchFile, readdirSync, existsSync } from "node:fs";
+import { readFileSync, writeFileSync, watchFile, readdirSync, existsSync, unlinkSync, mkdirSync } from "node:fs";
 import { resolve, join } from "node:path";
 import { networkInterfaces } from "node:os";
 import cors from "cors";
@@ -183,7 +183,6 @@ async function loadPlugins() {
       const id = file.replace(".js", "");
       if (state[id]?.disabled) { console.log(`[deck] Plugin skipped (disabled): ${id}`); continue; }
       try {
-        // eslint-disable-next-line @typescript-eslint/no-require-imports
         const { createRequire } = await import("node:module");
         const req = createRequire(import.meta.url);
         const plugin = req(resolve(pluginsDir, file));
@@ -263,7 +262,7 @@ app.post("/plugins/install", async (req, res) => {
       res.status(400).json({ error: "Invalid plugin: must export { name, setup }" }); return;
     }
     const pluginsDir = resolve(CONFIG_PATH, "../plugins");
-    if (!existsSync(pluginsDir)) { const { mkdirSync } = await import("node:fs"); mkdirSync(pluginsDir, { recursive: true }); }
+    if (!existsSync(pluginsDir)) { mkdirSync(pluginsDir, { recursive: true }); }
     writeFileSync(resolve(pluginsDir, `${id}.js`), code);
     res.json({ ok: true, message: "Restart to activate" });
   } catch (e) { res.status(500).json({ error: (e as Error).message }); }
@@ -275,7 +274,7 @@ app.post("/plugins/uninstall", (req, res) => {
     if (!id) { res.status(400).json({ error: "id required" }); return; }
     const pluginsDir = resolve(CONFIG_PATH, "../plugins");
     const filePath = resolve(pluginsDir, `${id}.js`);
-    if (existsSync(filePath)) { const { unlinkSync } = require("node:fs"); unlinkSync(filePath); }
+    if (existsSync(filePath)) { unlinkSync(filePath); }
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: (e as Error).message }); }
 });
