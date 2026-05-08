@@ -5,6 +5,7 @@ import { readFileSync, writeFileSync, watchFile } from "node:fs";
 import { resolve, join } from "node:path";
 import { networkInterfaces } from "node:os";
 import cors from "cors";
+import QRCode from "qrcode";
 import type { ServerToClientEvents, ClientToServerEvents, DeckAction } from "@open-deck/shared";
 
 const PORT = Number(process.env.PORT) || 4000;
@@ -89,6 +90,14 @@ app.get("/health", (req, res) => {
   const isLocal = remoteIp === "127.0.0.1" || remoteIp === "::1" || localIps.includes(remoteIp);
   const ip = localIps[0] ?? "localhost";
   res.json({ status: "ok", agent: !!agentSocket, actions: actions.length, isLocal, url: `http://${ip}:${PORT}` });
+});
+
+app.get("/qr", async (_req, res) => {
+  const localIps = Object.values(networkInterfaces()).flat().filter(n => n && n.family === "IPv4" && !n.internal).map(n => n!.address);
+  const ip = localIps[0] ?? "localhost";
+  const url = `http://${ip}:${PORT}`;
+  const svg = await QRCode.toString(url, { type: "svg", margin: 1, color: { dark: "#ffffff", light: "#00000000" } });
+  res.type("svg").send(svg);
 });
 
 // Get detected apps from agent

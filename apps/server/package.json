@@ -10,16 +10,18 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "cors": "2.8.5",
     "express": "4.21.2",
-    "socket.io": "4.8.1",
-    "cors": "2.8.5"
+    "qrcode": "^1.5.4",
+    "socket.io": "4.8.1"
   },
   "devDependencies": {
-    "@types/express": "5.0.1",
+    "@open-deck/shared": "workspace:*",
     "@types/cors": "2.8.17",
-    "tsx": "4.19.3",
+    "@types/express": "5.0.1",
+    "@types/qrcode": "^1.5.6",
     "tsup": "8.4.0",
-    "typescript": "5.8.3",
-    "@open-deck/shared": "workspace:*"
+    "tsx": "4.19.3",
+    "typescript": "5.8.3"
   }
 }
