@@ -155,9 +155,21 @@ app.post("/notify", (req, res) => {
 const widgets: Record<string, { interval: number; getData: () => unknown }> = {};
 const customActions: Record<string, (payload: unknown) => void> = {};
 
+// Plugin state (enabled/disabled)
+const PLUGINS_STATE_PATH = resolve(CONFIG_PATH, "../plugins-state.json");
+
+function loadPluginsState(): Record<string, { disabled?: boolean }> {
+  try { return JSON.parse(readFileSync(PLUGINS_STATE_PATH, "utf-8")); } catch { return {}; }
+}
+
+function savePluginsState(state: Record<string, { disabled?: boolean }>) {
+  writeFileSync(PLUGINS_STATE_PATH, JSON.stringify(state, null, 2));
+}
+
 async function loadPlugins() {
   const pluginsDir = resolve(CONFIG_PATH, "../plugins");
   if (!existsSync(pluginsDir)) return;
+  const state = loadPluginsState();
   const deck = {
     registerAction: (type: string, handler: (payload: unknown) => void) => { customActions[type] = handler; },
     registerWidget: (id: string, config: { interval: number; getData: () => unknown }) => { widgets[id] = config; startWidget(id, config); },
@@ -168,6 +180,8 @@ async function loadPlugins() {
   try {
     const files = readdirSync(pluginsDir).filter(f => f.endsWith(".js"));
     for (const file of files) {
+      const id = file.replace(".js", "");
+      if (state[id]?.disabled) { console.log(`[deck] Plugin skipped (disabled): ${id}`); continue; }
       try {
         // eslint-disable-next-line @typescript-eslint/no-require-imports
         const { createRequire } = await import("node:module");
@@ -196,21 +210,44 @@ app.get("/widgets", (_req, res) => {
 // Plugin store
 const REGISTRY_URL = "https://raw.githubusercontent.com/florextech/deck-plugins/main/registry.json";
 
+function currentPlatform(): string {
+  const p = process.platform;
+  if (p === "darwin") return "macos";
+  if (p === "win32") return "windows";
+  return "linux";
+}
+
 app.get("/plugins/store", async (_req, res) => {
   try {
     const r = await fetch(REGISTRY_URL);
     const data = await r.json() as { plugins: unknown[] };
-    // Mark installed plugins
     const pluginsDir = resolve(CONFIG_PATH, "../plugins");
     const installed = existsSync(pluginsDir) ? readdirSync(pluginsDir).filter(f => f.endsWith(".js")).map(f => f.replace(".js", "")) : [];
-    res.json({ plugins: (data.plugins as Array<{ id: string }>).map(p => ({ ...p, installed: installed.includes(p.id) })) });
+    const state = loadPluginsState();
+    const platform = currentPlatform();
+    res.json({ plugins: (data.plugins as Array<{ id: string; platforms?: string[] }>).map(p => ({ ...p, installed: installed.includes(p.id), disabled: !!state[p.id]?.disabled, currentPlatform: platform })) });
   } catch { res.json({ plugins: [] }); }
+});
+
+app.post("/plugins/toggle", (req, res) => {
+  try {
+    const { id } = req.body as { id: string };
+    if (!id) { res.status(400).json({ error: "id required" }); return; }
+    const state = loadPluginsState();
+    state[id] = { disabled: !state[id]?.disabled };
+    savePluginsState(state);
+    res.json({ ok: true, disabled: state[id].disabled });
+  } catch (e) { res.status(500).json({ error: (e as Error).message }); }
 });
 
 app.post("/plugins/install", async (req, res) => {
   try {
-    const { id, url } = req.body as { id: string; url: string };
+    const { id, url, platforms } = req.body as { id: string; url: string; platforms?: string[] };
     if (!id || !url) { res.status(400).json({ error: "id and url required" }); return; }
+    // Platform check
+    if (platforms && platforms.length && !platforms.includes(currentPlatform())) {
+      res.status(400).json({ error: `Not supported on ${currentPlatform()}. Supported: ${platforms.join(", ")}` }); return;
+    }
     // Only allow from trusted sources
     if (!url.startsWith("https://raw.githubusercontent.com/")) {
       res.status(403).json({ error: "Only GitHub raw URLs allowed" }); return;

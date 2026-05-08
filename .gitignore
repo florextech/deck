@@ -6,3 +6,4 @@ dist
 *.tsbuildinfo
 coverage
 .turbo
+plugins-state.json
