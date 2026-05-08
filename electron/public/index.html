@@ -493,13 +493,19 @@
         html += cats.map(c => `<button class="cat-tab ${activeCategory===c?'active':''}" onclick="setCategory('${c}')">${c === 'all' ? t('all') : c}</button>`).join('');
         html += `</div>`;
       }
-      html += filtered.map(a => `<div class="tile" id="tile-${a.id}" onclick="exec('${a.id}')" draggable="${isHost}" ondragstart="dragStart(event,'${a.id}')" ondragover="dragOver(event)" ondrop="drop(event,'${a.id}')" ondragend="dragEnd(event)">${getTileIcon(a)}<span>${a.label}</span>${a.confirm?'<div style="position:absolute;top:6px;right:6px;width:6px;height:6px;border-radius:50%;background:var(--red)"></div>':''}</div>`).join('');
+      html += filtered.map(a => `<div class="tile" data-action-id="${a.id}" draggable="${isHost}" ondragstart="dragStart(event,'${a.id}')" ondragover="dragOver(event)" ondrop="drop(event,'${a.id}')" ondragend="dragEnd(event)">${getTileIcon(a)}<span>${a.label}</span>${a.confirm?'<div style="position:absolute;top:6px;right:6px;width:6px;height:6px;border-radius:50%;background:var(--red)"></div>':''}</div>`).join('');
 
       el.innerHTML = html;
       lucide.createIcons();
     }
 
     function setCategory(cat) { activeCategory = cat; renderGrid(); }
+
+    // Event delegation for tile clicks
+    document.getElementById('grid').addEventListener('click', (e) => {
+      const tile = e.target.closest('[data-action-id]');
+      if (tile) exec(tile.dataset.actionId);
+    });
 
     function exec(id) {
       const action = actions.find(a => a.id === id);
@@ -528,7 +534,7 @@
     function doExec(id) {
       if (!socket || !socket.connected) { addNotif(lang==='es'?'No conectado al servidor':'Not connected to server', 'error'); return; }
       socket.emit('action:execute', id);
-      const tile = document.getElementById('tile-' + id);
+      const tile = document.querySelector(`[data-action-id="${id}"]`);
       if (tile) { tile.classList.add('flash-ok'); setTimeout(() => tile.classList.remove('flash-ok'), 600); }
     }
 
