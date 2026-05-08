@@ -219,6 +219,11 @@ app.get("/widgets", (_req, res) => {
   res.json(data);
 });
 
+// Debug logs
+const serverLogs: string[] = [];
+function log(msg: string) { const entry = `[${new Date().toLocaleTimeString()}] ${msg}`; serverLogs.push(entry); if (serverLogs.length > 100) serverLogs.shift(); console.log(entry); }
+app.get("/logs", (_req, res) => { res.json({ logs: serverLogs }); });
+
 // Plugin store
 const REGISTRY_URL = "https://raw.githubusercontent.com/florextech/deck-plugins/main/registry.json";
 const LOCAL_REGISTRY = [

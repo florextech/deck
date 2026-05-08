@@ -7,6 +7,7 @@ const { join } = require("path");
 const path = require("path");
 const express = require("express");
 const { createServer } = require("http");
+const https = require("https");
 const { Server } = require("socket.io");
 const cors = require("cors");
 const QRCode = require("qrcode");
@@ -15,6 +16,22 @@ const PORT = 4000;
 let win = null;
 let tray = null;
 const os = require("os").platform();
+const logs = [];
+function log(msg) { const entry = `[${new Date().toLocaleTimeString()}] ${msg}`; logs.push(entry); if (logs.length > 100) logs.shift(); console.log(entry); }
+
+function httpsGet(url) {
+  return new Promise((resolve, reject) => {
+    https.get(url, (res) => {
+      if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+        return httpsGet(res.headers.location).then(resolve).catch(reject);
+      }
+      let data = "";
+      res.on("data", c => data += c);
+      res.on("end", () => resolve(data));
+      res.on("error", reject);
+    }).on("error", reject);
+  });
+}
 
 function getLocalIP() {
   const nets = networkInterfaces();
@@ -130,10 +147,11 @@ app.whenReady().then(() => {
     const platform = currentPlatform();
     let registryPlugins = LOCAL_REGISTRY;
     try {
-      const r = await fetch(REGISTRY_URL, { signal: AbortSignal.timeout(5000) });
-      const data = await r.json();
+      const raw = await httpsGet(REGISTRY_URL);
+      const data = JSON.parse(raw);
       if (data.plugins && data.plugins.length) registryPlugins = data.plugins;
-    } catch {}
+      log(`Registry loaded: ${registryPlugins.length} plugins`);
+    } catch (e) { log(`Registry fetch failed: ${e.message}`); }
     const plugins = registryPlugins.map(p => ({ ...p, installed: installed.includes(p.id), disabled: !!state[p.id]?.disabled, currentPlatform: platform }));
     for (const id of installed) { if (!plugins.find(p => p.id === id)) plugins.push({ id, name: id, description: "Installed locally", installed: true, disabled: !!state[id]?.disabled, currentPlatform: platform }); }
     res.json({ plugins });
@@ -154,14 +172,14 @@ app.whenReady().then(() => {
       if (!id || !url) return res.status(400).json({ error: "id and url required" });
       if (platforms && platforms.length && !platforms.includes(currentPlatform())) return res.status(400).json({ error: `Not supported on ${currentPlatform()}` });
       if (!url.startsWith("https://raw.githubusercontent.com/")) return res.status(403).json({ error: "Only GitHub raw URLs allowed" });
-      const r = await fetch(url);
-      const code = await r.text();
+      log(`Installing plugin: ${id} from ${url}`);
+      const code = await httpsGet(url);
       if (!code.includes("module.exports") || !code.includes("setup")) return res.status(400).json({ error: "Invalid plugin" });
       const { mkdirSync } = require("fs");
       if (!existsSync(pluginsDir)) mkdirSync(pluginsDir, { recursive: true });
       writeFileSync(join(pluginsDir, `${id}.js`), code);
-      res.json({ ok: true });
-    } catch (e) { res.status(500).json({ error: e.message }); }
+      res.json({ ok: true }); log(`Plugin installed: ${req.body.id}`);
+    } catch (e) { log(`Install error: ${e.message}`); res.status(500).json({ error: e.message }); }
   });
 
   srv.post("/plugins/uninstall", (req, res) => {
@@ -172,8 +190,9 @@ app.whenReady().then(() => {
     res.json({ ok: true });
   });
 
-  srv.post("/plugins/reload", (_, res) => { res.json({ ok: true }); });
+  srv.post("/plugins/reload", (_, res) => { log("Plugins reload requested"); res.json({ ok: true }); });
   srv.get("/widgets", (_, res) => { res.json({}); });
+  srv.get("/logs", (_, res) => { res.json({ logs }); });
 
   httpServer.listen(PORT, "0.0.0.0", () => console.log(`[deck] :${PORT}`));
 
