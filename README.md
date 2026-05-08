@@ -103,6 +103,16 @@ pnpm build:installer       # Mac (.dmg)
 pnpm build:installer:win   # Windows (.exe)
 ```
 
+### macOS: "Deck.app is damaged and can't be opened"
+
+This happens because the app is not signed with an Apple Developer certificate. Run this after installing:
+
+```bash
+xattr -cr /Applications/Deck.app
+```
+
+Then open the app normally.
+
 ## Structure
 
 ```
