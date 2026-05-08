@@ -402,6 +402,8 @@
     // Workspaces
     let workspaces = JSON.parse(localStorage.getItem('deck-workspaces') || '[]');
     let activeWorkspace = localStorage.getItem('deck-active-workspace') || location.origin;
+    let activeCategory = 'all';
+    let currentPage = 0;
     let socket;
 
     function connectTo(serverUrl) {
@@ -479,7 +481,6 @@
       return `<div class="tile-icon"><i data-lucide="${lucideMap[a.type] || 'zap'}"></i></div>`;
     }
 
-    let activeCategory = 'all';
     let pendingConfirmId = null;
 
     function getCategories() {
@@ -487,7 +488,6 @@
       return ['all', ...cats];
     }
 
-    let currentPage = 0;
     const ITEMS_PER_PAGE = 12;
 
     function renderGrid() {
