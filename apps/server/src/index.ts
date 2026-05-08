@@ -209,10 +209,22 @@ app.post("/plugins/install", async (req, res) => {
   try {
     const { id, url } = req.body as { id: string; url: string };
     if (!id || !url) { res.status(400).json({ error: "id and url required" }); return; }
-    const pluginsDir = resolve(CONFIG_PATH, "../plugins");
-    if (!existsSync(pluginsDir)) { const { mkdirSync } = await import("node:fs"); mkdirSync(pluginsDir, { recursive: true }); }
+    // Only allow from trusted sources
+    if (!url.startsWith("https://raw.githubusercontent.com/")) {
+      res.status(403).json({ error: "Only GitHub raw URLs allowed" }); return;
+    }
     const r = await fetch(url);
     const code = await r.text();
+    // Basic security validation
+    const blocked = ["eval(", "Function(", "child_process", "require('fs')", "require(\"fs\")", "writeFileSync", "unlinkSync", "rmSync", "process.env"];
+    const found = blocked.find(b => code.includes(b) && !url.includes("florextech/deck"));
+    if (found) { res.status(403).json({ error: `Blocked: contains '${found}'` }); return; }
+    // Validate structure
+    if (!code.includes("module.exports") || !code.includes("setup")) {
+      res.status(400).json({ error: "Invalid plugin: must export { name, setup }" }); return;
+    }
+    const pluginsDir = resolve(CONFIG_PATH, "../plugins");
+    if (!existsSync(pluginsDir)) { const { mkdirSync } = await import("node:fs"); mkdirSync(pluginsDir, { recursive: true }); }
     writeFileSync(resolve(pluginsDir, `${id}.js`), code);
     res.json({ ok: true, message: "Restart to activate" });
   } catch (e) { res.status(500).json({ error: (e as Error).message }); }
