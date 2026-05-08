@@ -373,7 +373,7 @@
       // Workspaces
       html += `<h4 style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px">Workspaces</h4>`;
       html += workspaces.map(w => `<div class="config-item" style="cursor:pointer;${w.url===activeWorkspace?'border-color:var(--accent);background:var(--accent-soft)':''}" onclick="switchWorkspace('${w.url}')"><div style="width:8px;height:8px;border-radius:50%;background:${w.url===activeWorkspace?'var(--green)':'var(--text-dim)'};flex-shrink:0"></div><div class="info"><p>${w.name}</p><small>${w.url}</small></div><button class="del" onclick="event.stopPropagation();removeWorkspace('${w.url}')">×</button></div>`).join('');
-      html += `<button class="add-btn" onclick="addWorkspaceManual()" style="margin-top:8px;padding:12px">+ Add PC</button>`;
+      html += `<div style="display:flex;gap:8px;margin-top:8px"><button class="add-btn" onclick="scanForHosts()" style="flex:1;margin:0;padding:12px" id="scan-btn"><i data-lucide="radar" style="width:14px;height:14px;display:inline;vertical-align:middle;margin-right:4px"></i> Scan</button><button class="add-btn" onclick="addWorkspaceManual()" style="flex:1;margin:0;padding:12px"><i data-lucide="plus" style="width:14px;height:14px;display:inline;vertical-align:middle;margin-right:4px"></i> Manual</button></div>`;
       // Theme
       html += `<h4 style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;margin-top:20px">Theme</h4><div class="theme-grid">`;
       html += themes.map(t => `<button class="theme-btn ${currentTheme===t.id?'active':''}" style="background:${t.color}" onclick="setTheme('${t.id}')"><span>${t.name}</span></button>`).join('');
@@ -396,6 +396,29 @@
       if (!ip) return;
       const url = ip.includes('://') ? ip : `http://${ip}:4000`;
       workspaces.push({ name, url });
+      localStorage.setItem('deck-workspaces', JSON.stringify(workspaces));
+      renderConfig();
+    }
+
+    async function scanForHosts() {
+      const btn = document.getElementById('scan-btn');
+      btn.textContent = 'Scanning...';
+      btn.style.opacity = '0.5';
+      const parts = location.hostname.split('.');
+      const subnet = parts.slice(0, 3).join('.');
+      const found = [];
+      const promises = [];
+      for (let i = 1; i <= 254; i++) {
+        const url = `http://${subnet}.${i}:4000`;
+        if (workspaces.find(w => w.url === url)) continue;
+        promises.push(fetch(`${url}/health`, { signal: AbortSignal.timeout(1500) }).then(r => r.json()).then(d => { if (d.status === 'ok') found.push({ ip: `${subnet}.${i}`, url, actions: d.actions }); }).catch(() => {}));
+      }
+      await Promise.all(promises);
+      if (!found.length) { btn.innerHTML = 'No new PCs found'; setTimeout(() => renderConfig(), 2000); return; }
+      for (const h of found) {
+        const name = prompt(`Found Deck at ${h.ip}. Name:`, h.ip);
+        if (name) workspaces.push({ name, url: h.url });
+      }
       localStorage.setItem('deck-workspaces', JSON.stringify(workspaces));
       renderConfig();
     }
