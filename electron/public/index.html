@@ -777,7 +777,7 @@
         .catch(() => addNotif('Uninstall failed', 'error'));
     }
 
-    const CURRENT_VERSION = '0.6.1';
+    const CURRENT_VERSION = '0.6.6';
     const REPO = 'florextech/deck';
 
     function checkForUpdates() {
@@ -787,14 +787,7 @@
         const currentV = h.version || CURRENT_VERSION;
         const vLabel = document.getElementById('version-label');
         if (vLabel) vLabel.textContent = `Deck v${currentV}`;
-        fetch(`https://api.github.com/repos/${REPO}/releases/latest`).then(r => r.json()).then(d => {
-          const latest = (d.tag_name || '').replace('v', '');
-          if (!latest || latest === currentV) {
-            el.innerHTML = `<span style="color:var(--green)">v${currentV} ✓ ${lang==='es'?'Estás actualizado':'Up to date'}</span>`;
-          } else {
-            el.innerHTML = `<span style="color:var(--accent)">v${latest} ${lang==='es'?'disponible — se actualizará automáticamente':'available — will update automatically'}</span>`;
-          }
-        }).catch(() => { el.innerHTML = `<span style="color:var(--text-dim)">v${currentV}</span>`; });
+        el.innerHTML = `<span style="color:var(--green)">v${currentV} ✓</span>`;
       }).catch(() => { el.innerHTML = `<span style="color:var(--text-dim)">v${CURRENT_VERSION}</span>`; });
     }
 

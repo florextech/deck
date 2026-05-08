@@ -13,13 +13,13 @@ jobs:
         include:
           - os: macos-latest
             build_cmd: npm run build:mac
-            artifact: "dist/*.dmg"
+            artifact: "dist/{*.dmg,*.zip,*.yml}"
           - os: windows-latest
             build_cmd: npm run build:win
-            artifact: "dist/*.exe"
+            artifact: "dist/{*.exe,*.yml}"
           - os: ubuntu-latest
             build_cmd: npm run build:linux
-            artifact: "dist/*.AppImage"
+            artifact: "dist/{*.AppImage,*.yml}"
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
