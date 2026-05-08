@@ -13,13 +13,10 @@ jobs:
         include:
           - os: macos-latest
             build_cmd: npm run build:mac
-            artifact: "dist/{*.dmg,*.zip,*.yml}"
           - os: windows-latest
             build_cmd: npm run build:win
-            artifact: "dist/{*.exe,*.yml}"
           - os: ubuntu-latest
             build_cmd: npm run build:linux
-            artifact: "dist/{*.AppImage,*.yml}"
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -42,7 +39,13 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: deck-${{ matrix.os }}
-          path: electron/${{ matrix.artifact }}
+          path: |
+            electron/dist/*.dmg
+            electron/dist/*.zip
+            electron/dist/*.exe
+            electron/dist/*.AppImage
+            electron/dist/*.yml
+            electron/dist/*.blockmap
 
   release:
     needs: build
