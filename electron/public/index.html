@@ -612,11 +612,35 @@
       html += `</div>`;
       html += `<h4 style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;margin-top:16px">${t('language')}</h4>`;
       html += `<div style="display:flex;gap:8px"><button onclick="setLang('en')" style="flex:1;padding:10px;border-radius:10px;border:1px solid ${lang==='en'?'var(--accent)':'var(--glass-border)'};background:${lang==='en'?'var(--accent-soft)':'transparent'};color:${lang==='en'?'var(--accent)':'var(--text-dim)'};font-size:12px;font-weight:600;cursor:pointer">English</button><button onclick="setLang('es')" style="flex:1;padding:10px;border-radius:10px;border:1px solid ${lang==='es'?'var(--accent)':'var(--glass-border)'};background:${lang==='es'?'var(--accent-soft)':'transparent'};color:${lang==='es'?'var(--accent)':'var(--text-dim)'};font-size:12px;font-weight:600;cursor:pointer">Español</button></div>`;
-      html += `<h4 style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;margin-top:16px">${t('sound')}</h4><div class="sound-toggle"><span>${t('notifSound')}</span><button class="toggle ${soundEnabled?'on':''}" onclick="toggleSound()"></button></div></div>`;
+      html += `<h4 style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;margin-top:16px">${t('sound')}</h4><div class="sound-toggle"><span>${t('notifSound')}</span><button class="toggle ${soundEnabled?'on':''}" onclick="toggleSound()"></button></div>`;
+      html += `<h4 style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;margin-top:16px">Updates</h4><div id="update-section" style="font-size:12px;color:var(--text-dim)"></div>`;
+      html += `</div>`;
       return html;
     }
 
     function setLang(l) { lang = l; localStorage.setItem('deck-lang', l); renderConfig(); renderGrid(); renderNotifs(); }
+
+    const CURRENT_VERSION = '0.1.0';
+    const REPO = 'florextech/deck';
+
+    function checkForUpdates() {
+      const el = document.getElementById('update-section');
+      if (!el) return;
+      el.innerHTML = `<span style="color:var(--text-dim)">${lang==='es'?'Verificando...':'Checking...'}</span>`;
+      fetch(`https://api.github.com/repos/${REPO}/releases/latest`).then(r => r.json()).then(d => {
+        const latest = (d.tag_name || '').replace('v', '');
+        if (!latest) { el.innerHTML = `<span>v${CURRENT_VERSION} (${lang==='es'?'actualizado':'up to date'})</span>`; return; }
+        if (latest === CURRENT_VERSION) {
+          el.innerHTML = `<span style="color:var(--green)">v${CURRENT_VERSION} ✓ ${lang==='es'?'Estás actualizado':'Up to date'}</span>`;
+        } else {
+          el.innerHTML = `<div style="display:flex;flex-direction:column;gap:8px"><span style="color:var(--accent)">v${latest} ${lang==='es'?'disponible':'available'} (${lang==='es'?'tienes':'current'} v${CURRENT_VERSION})</span><a href="https://github.com/${REPO}/releases/latest" target="_blank" style="display:inline-block;padding:10px 16px;border-radius:10px;background:var(--accent-soft);color:var(--accent);font-weight:600;font-size:12px;text-decoration:none;text-align:center">${lang==='es'?'Descargar actualización':'Download update'}</a></div>`;
+        }
+      }).catch(() => { el.innerHTML = `<span style="color:var(--text-dim)">${lang==='es'?'No se pudo verificar':'Could not check'}</span>`; });
+    }
+
+    // Check on settings render
+    const origRenderConfig = renderConfig;
+    renderConfig = function() { origRenderConfig(); if (configTab === 'settings') setTimeout(checkForUpdates, 200); };
 
     function switchWorkspace(url) { connectTo(url); renderConfig(); }
     function removeWorkspace(url) {
