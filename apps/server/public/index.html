@@ -183,6 +183,32 @@
     #nav button svg { width:20px; height:20px; }
     .empty { grid-column:1/-1; text-align:center; color:var(--text-dim); padding:80px 20px; font-size:13px; line-height:1.6; }
     .empty b { color:var(--accent); }
+
+    /* Feedback flash */
+    .tile.flash-ok { animation: flashOk 0.6s ease; }
+    .tile.flash-err { animation: flashErr 0.6s ease; }
+    @keyframes flashOk { 0%,100%{box-shadow:none} 30%{box-shadow:0 0 20px var(--green), inset 0 0 10px rgba(74,222,128,0.1); border-color:var(--green)} }
+    @keyframes flashErr { 0%,100%{box-shadow:none} 30%{box-shadow:0 0 20px var(--red), inset 0 0 10px rgba(248,113,113,0.1); border-color:var(--red)} }
+
+    /* Category tabs */
+    .cat-tabs { display:flex; gap:6px; overflow-x:auto; padding:0 0 10px; margin-bottom:2px; -webkit-overflow-scrolling:touch; }
+    .cat-tabs::-webkit-scrollbar { display:none; }
+    .cat-tab { padding:6px 14px; border-radius:20px; border:1px solid var(--glass-border); background:transparent; color:var(--text-dim); font-size:11px; font-weight:500; cursor:pointer; white-space:nowrap; flex-shrink:0; transition:all .15s; }
+    .cat-tab.active { background:var(--accent-soft); border-color:var(--accent); color:var(--accent); }
+
+    /* Confirm dialog */
+    #confirm-dialog { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); z-index:200; flex-direction:column; align-items:center; justify-content:center; }
+    #confirm-dialog.active { display:flex; }
+    #confirm-box { background:rgba(22,22,26,0.95); border:1px solid var(--glass-border); border-radius:20px; padding:24px; width:90%; max-width:300px; text-align:center; }
+    #confirm-box p { font-size:14px; margin-bottom:16px; }
+    #confirm-box .btns { display:flex; gap:8px; }
+    #confirm-box .btns button { flex:1; padding:12px; border-radius:12px; font-size:13px; font-weight:600; cursor:pointer; border:none; }
+    #confirm-box .btn-yes { background:var(--red); color:#fff; }
+    #confirm-box .btn-no { background:var(--glass); color:var(--text-dim); border:1px solid var(--glass-border); }
+
+    /* Drag */
+    .tile.dragging { opacity:0.5; transform:scale(0.95); }
+    .tile.drag-over { border-color:var(--accent); box-shadow:0 0 12px var(--glass-glow); }
     ::-webkit-scrollbar { width:0; }
   </style>
 </head>
@@ -215,6 +241,8 @@
           <input id="mf-label" placeholder="Button name" required>
           <input id="mf-value" required>
           <input id="mf-icon" placeholder="Custom icon URL (optional)">
+          <input id="mf-category" placeholder="Category (optional, e.g. Dev, Media)">
+          <label style="display:flex;align-items:center;gap:8px;padding:8px 0;font-size:12px;color:var(--text-dim);cursor:pointer"><input type="checkbox" id="mf-confirm" style="width:16px;height:16px;accent-color:var(--accent)"> Require confirmation</label>
           <button type="submit" class="submit-btn">Add to deck</button>
         </form>
         <button class="modal-back" onclick="modalBack()">← Back</button>
@@ -222,6 +250,15 @@
       <div id="modal-step-apps" style="display:none">
         <div id="apps-grid"></div>
         <button class="modal-back" onclick="modalBack()">← Back</button>
+      </div>
+    </div>
+  </div>
+  <div id="confirm-dialog">
+    <div id="confirm-box">
+      <p id="confirm-msg">Are you sure?</p>
+      <div class="btns">
+        <button class="btn-no" onclick="cancelConfirm()">Cancel</button>
+        <button class="btn-yes" onclick="doConfirm()">Execute</button>
       </div>
     </div>
   </div>
@@ -416,11 +453,88 @@
       return `<div class="tile-icon"><i data-lucide="${lucideMap[a.type] || 'zap'}"></i></div>`;
     }
 
+    let activeCategory = 'all';
+    let pendingConfirmId = null;
+
+    function getCategories() {
+      const cats = new Set(actions.map(a => a.category || 'General'));
+      return ['all', ...cats];
+    }
+
     function renderGrid() {
       const el = document.getElementById('grid');
       if (!actions.length) { el.innerHTML = `<div class="empty">${t('noActions')}<br>${t('tapConfig')}</div>`; return; }
-      el.innerHTML = actions.map(a => `<div class="tile" onclick="exec('${a.id}')">${getTileIcon(a)}<span>${a.label}</span></div>`).join('');
+
+      const cats = getCategories();
+      const filtered = activeCategory === 'all' ? actions : actions.filter(a => (a.category || 'General') === activeCategory);
+
+      let html = '';
+      if (cats.length > 2) {
+        html += `<div class="cat-tabs" style="grid-column:1/-1">`;
+        html += cats.map(c => `<button class="cat-tab ${activeCategory===c?'active':''}" onclick="setCategory('${c}')">${c === 'all' ? (lang==='es'?'Todos':'All') : c}</button>`).join('');
+        html += `</div>`;
+      }
+      html += filtered.map(a => `<div class="tile" id="tile-${a.id}" onclick="exec('${a.id}')" draggable="${isHost}" ondragstart="dragStart(event,'${a.id}')" ondragover="dragOver(event)" ondrop="drop(event,'${a.id}')" ondragend="dragEnd(event)">${getTileIcon(a)}<span>${a.label}</span>${a.confirm?'<div style="position:absolute;top:6px;right:6px;width:6px;height:6px;border-radius:50%;background:var(--red)"></div>':''}</div>`).join('');
+
+      el.innerHTML = html;
       lucide.createIcons();
+    }
+
+    function setCategory(cat) { activeCategory = cat; renderGrid(); }
+
+    function exec(id) {
+      const action = actions.find(a => a.id === id);
+      if (!action) return;
+      if (action.confirm) {
+        pendingConfirmId = id;
+        document.getElementById('confirm-msg').textContent = `${lang==='es'?'¿Ejecutar':'Execute'} "${action.label}"?`;
+        document.getElementById('confirm-dialog').classList.add('active');
+        return;
+      }
+      doExec(id);
+    }
+
+    function doConfirm() {
+      document.getElementById('confirm-dialog').classList.remove('active');
+      if (pendingConfirmId) doExec(pendingConfirmId);
+      pendingConfirmId = null;
+    }
+    function cancelConfirm() {
+      document.getElementById('confirm-dialog').classList.remove('active');
+      pendingConfirmId = null;
+    }
+
+    function doExec(id) {
+      socket.emit('action:execute', id);
+      // Flash feedback
+      const tile = document.getElementById('tile-' + id);
+      if (tile) { tile.classList.add('flash-ok'); setTimeout(() => tile.classList.remove('flash-ok'), 600); }
+    }
+
+    // Listen for execution results from server
+    if (socket) socket.on('action:result', (data) => {
+      const tile = document.getElementById('tile-' + data.id);
+      if (!tile) return;
+      tile.classList.remove('flash-ok');
+      tile.classList.add(data.success ? 'flash-ok' : 'flash-err');
+      setTimeout(() => tile.classList.remove('flash-ok', 'flash-err'), 600);
+    });
+
+    // Drag & drop reorder (host only)
+    let dragId = null;
+    function dragStart(e, id) { dragId = id; e.target.classList.add('dragging'); }
+    function dragOver(e) { e.preventDefault(); e.currentTarget.classList.add('drag-over'); }
+    function dragEnd(e) { e.target.classList.remove('dragging'); document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over')); }
+    function drop(e, targetId) {
+      e.preventDefault(); e.currentTarget.classList.remove('drag-over');
+      if (!dragId || dragId === targetId) return;
+      const fromIdx = actions.findIndex(a => a.id === dragId);
+      const toIdx = actions.findIndex(a => a.id === targetId);
+      if (fromIdx < 0 || toIdx < 0) return;
+      const [item] = actions.splice(fromIdx, 1);
+      actions.splice(toIdx, 0, item);
+      save();
+      dragId = null;
     }
 
     function renderConfig() {
@@ -515,7 +629,6 @@
     function setTheme(id) { currentTheme = id; document.documentElement.dataset.theme = id; localStorage.setItem('deck-theme', id); renderConfig(); }
     function toggleSound() { soundEnabled = !soundEnabled; localStorage.setItem('deck-sound', JSON.stringify(soundEnabled)); renderConfig(); }
 
-    function exec(id) { socket.emit('action:execute', id); }
     function del(id) { actions = actions.filter(a => a.id !== id); save(); }
     function save() { fetch(activeWorkspace + '/config', { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify({actions}) }); renderGrid(); renderConfig(); }
 
@@ -567,13 +680,17 @@
       e.preventDefault();
       const label = document.getElementById('mf-label').value;
       const icon = document.getElementById('mf-icon').value || undefined;
+      const category = document.getElementById('mf-category').value || undefined;
+      const confirm = document.getElementById('mf-confirm').checked || undefined;
       const value = document.getElementById('mf-value').value;
       const payload = currentType==='url'?{type:'url',url:value}:currentType==='copy'?{type:'copy',text:value}:{type:'command',command:value};
-      actions.push({ id: crypto.randomUUID(), label, icon, type: currentType, payload });
+      actions.push({ id: crypto.randomUUID(), label, icon, category, confirm, type: currentType, payload });
       save();
       document.getElementById('mf-label').value = '';
       document.getElementById('mf-icon').value = '';
       document.getElementById('mf-value').value = '';
+      document.getElementById('mf-category').value = '';
+      document.getElementById('mf-confirm').checked = false;
       closeModal();
     };
 

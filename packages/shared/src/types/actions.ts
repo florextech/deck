@@ -8,6 +8,7 @@ export interface DeckAction {
   payload: ActionPayload;
   category?: string;
   color?: string;
+  confirm?: boolean;
 }
 
 export type ActionPayload =
