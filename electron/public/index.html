@@ -526,8 +526,8 @@
     }
 
     function doExec(id) {
+      if (!socket || !socket.connected) { addNotif(lang==='es'?'No conectado al servidor':'Not connected to server', 'error'); return; }
       socket.emit('action:execute', id);
-      // Flash feedback
       const tile = document.getElementById('tile-' + id);
       if (tile) { tile.classList.add('flash-ok'); setTimeout(() => tile.classList.remove('flash-ok'), 600); }
     }

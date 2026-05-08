@@ -6,7 +6,7 @@ const { platform } = require("os");
 const SERVER = process.env.SERVER_URL || "http://localhost:4000";
 const os = platform();
 
-const socket = io(SERVER, { transports: ["websocket"], query: { role: "agent" } });
+const socket = io(SERVER, { transports: ["websocket", "polling"], query: { role: "agent" }, reconnection: true, reconnectionDelay: 1000 });
 socket.on("connect", () => console.log("[agent] connected"));
 
 socket.on("action:run", (action) => {

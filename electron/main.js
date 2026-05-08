@@ -36,7 +36,7 @@ app.whenReady().then(() => {
   require("./server.js");
 
   // Start agent inline (delay to let server start)
-  setTimeout(() => require("./agent.js"), 1000);
+  setTimeout(() => require("./agent.js"), 2000);
 
   const ip = getLocalIP();
   const url = `http://${ip}:${PORT}`;
