@@ -14,11 +14,47 @@ Tablet/Phone  ──ws──▶  Server (:4000)  ──ws──▶  Desktop Agen
 ## Quick Start
 
 ```bash
+git clone https://github.com/florextech/deck.git
+cd deck
 pnpm install
 pnpm dev
 ```
 
 Scan the QR code shown in terminal with your tablet.
+
+## Tutorial
+
+### 1. First run
+
+After `pnpm dev`, you'll see a QR code in your terminal. Scan it with your tablet's camera to open Deck.
+
+### 2. Add your first action (from PC)
+
+1. Open `http://localhost:4000` on your PC
+2. Tap **Config** at the bottom
+3. Tap **+ Add action**
+4. Choose a type:
+   - **Open a link** → paste any URL
+   - **Copy text** → text that gets copied to your PC clipboard
+   - **Run command** → any terminal command
+   - **Open app** → pick from detected apps
+5. Give it a name → **Add to deck**
+
+### 3. Use from tablet
+
+Switch to the **Deck** tab and tap your buttons. They execute on your PC instantly.
+
+### 4. Customize
+
+In **Config → Settings** you can:
+- Change theme (8 options)
+- Toggle notification sound
+- Switch language (English/Español)
+- Add more PCs (workspaces)
+
+### 5. Install as app (PWA)
+
+On your tablet in Chrome: menu ⋮ → "Add to Home screen". Opens fullscreen without browser bars.
 
 ## Features
 
