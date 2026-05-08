@@ -12,7 +12,7 @@
     "build:standalone": "tsx scripts/build-standalone.ts",
     "build:installer": "cd electron && npm install && npm run build:mac",
     "build:installer:win": "cd electron && npm install && npm run build:win",
-    "lint": "pnpm -r lint",
+    "lint": "eslint apps/ packages/",
     "test": "vitest run",
     "typecheck": "pnpm -r typecheck"
   },
@@ -21,10 +21,13 @@
     "pnpm": ">=9"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "concurrently": "^9.2.1",
     "esbuild": "^0.28.0",
+    "eslint": "^10.3.0",
     "qrcode-terminal": "^0.12.0",
     "typescript": "5.8.3",
+    "typescript-eslint": "^8.59.2",
     "vitest": "3.1.3"
   }
 }

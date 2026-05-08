@@ -233,6 +233,100 @@
   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <script>
+    // ─── i18n ───
+    const i18n = {
+      en: {
+        waiting: 'waiting for notifications...',
+        connected: 'connected',
+        connError: 'cannot reach server',
+        disconnected: 'disconnected',
+        noActions: 'No actions yet.',
+        tapConfig: 'Tap <b>Config</b> to add.',
+        addAction: '+ Add action',
+        actions: 'Actions',
+        settings: 'Settings',
+        workspaces: 'Workspaces',
+        theme: 'Theme',
+        sound: 'Sound',
+        language: 'Language',
+        notifSound: 'Notification sound',
+        scan: 'Scan',
+        manual: 'Manual',
+        addPc: 'Add PC',
+        deck: 'Deck',
+        config: 'Config',
+        addActionTitle: 'Add action',
+        openLink: 'Open a link',
+        openLinkDesc: 'Website, URL',
+        copyText: 'Copy text',
+        copyTextDesc: 'Copy to PC clipboard',
+        runCommand: 'Run command',
+        runCommandDesc: 'Execute on PC',
+        openApp: 'Open app',
+        openAppDesc: 'From installed apps',
+        buttonName: 'Button name',
+        customIcon: 'Custom icon URL (optional)',
+        addToDeck: 'Add to deck',
+        back: '← Back',
+        agentNotConnected: 'Agent not connected. Start agent on PC.',
+        addLink: 'Add link',
+        addCopy: 'Add copy action',
+        addCommand: 'Add command',
+        selectApp: 'Select app',
+        namePrompt: 'Name (e.g. Work PC)',
+        ipPrompt: 'IP address (e.g. 192.168.1.50)',
+        scanning: 'Scanning...',
+        noNewPcs: 'No new PCs found',
+        foundAt: 'Found Deck at',
+      },
+      es: {
+        waiting: 'esperando notificaciones...',
+        connected: 'conectado',
+        connError: 'no se puede conectar',
+        disconnected: 'desconectado',
+        noActions: 'No hay acciones.',
+        tapConfig: 'Toca <b>Config</b> para agregar.',
+        addAction: '+ Agregar acción',
+        actions: 'Acciones',
+        settings: 'Ajustes',
+        workspaces: 'Espacios',
+        theme: 'Tema',
+        sound: 'Sonido',
+        language: 'Idioma',
+        notifSound: 'Sonido de notificación',
+        scan: 'Buscar',
+        manual: 'Manual',
+        addPc: 'Agregar PC',
+        deck: 'Deck',
+        config: 'Config',
+        addActionTitle: 'Agregar acción',
+        openLink: 'Abrir enlace',
+        openLinkDesc: 'Sitio web, URL',
+        copyText: 'Copiar texto',
+        copyTextDesc: 'Copiar al portapapeles del PC',
+        runCommand: 'Ejecutar comando',
+        runCommandDesc: 'Ejecutar en el PC',
+        openApp: 'Abrir app',
+        openAppDesc: 'De las apps instaladas',
+        buttonName: 'Nombre del botón',
+        customIcon: 'URL de icono (opcional)',
+        addToDeck: 'Agregar al deck',
+        back: '← Volver',
+        agentNotConnected: 'Agent no conectado. Inicia el agent en tu PC.',
+        addLink: 'Agregar enlace',
+        addCopy: 'Agregar copia',
+        addCommand: 'Agregar comando',
+        selectApp: 'Seleccionar app',
+        namePrompt: 'Nombre (ej. PC Trabajo)',
+        ipPrompt: 'Dirección IP (ej. 192.168.1.50)',
+        scanning: 'Buscando...',
+        noNewPcs: 'No se encontraron PCs',
+        foundAt: 'Deck encontrado en',
+      }
+    };
+    let lang = localStorage.getItem('deck-lang') || (navigator.language.startsWith('es') ? 'es' : 'en');
+    function t(key) { return i18n[lang]?.[key] || i18n.en[key] || key; }
+
     let actions = [];
     let currentType = 'url';
     let notifications = [];
@@ -264,9 +358,9 @@
       }).catch(() => { isHost = false; });
 
       socket = io(serverUrl, { transports: ['polling', 'websocket'] });
-      socket.on('connect', () => addNotif('connected', 'success'));
-      socket.on('connect_error', () => addNotif('cannot reach server', 'error'));
-      socket.on('disconnect', () => addNotif('disconnected', 'warning'));
+      socket.on('connect', () => addNotif(t('connected'), 'success'));
+      socket.on('connect_error', () => addNotif(t('connError'), 'error'));
+      socket.on('disconnect', () => addNotif(t('disconnected'), 'warning'));
       socket.on('config:actions', (data) => { actions = data; renderGrid(); renderConfig(); });
       socket.on('notification:new', (n) => { addNotif(n.title, n.level); playNotifSound(); });
     }
@@ -309,7 +403,7 @@
     }
     function renderNotifs() {
       const el = document.getElementById('status-bar');
-      if (!notifications.length) { el.innerHTML = '<div class="notif-line"><span class="notif-empty">waiting for notifications...</span></div>'; return; }
+      if (!notifications.length) { el.innerHTML = `<div class="notif-line"><span class="notif-empty">${t('waiting')}</span></div>`; return; }
       el.innerHTML = notifications.slice(0, 8).map(n =>
         `<div class="notif-line"><span class="notif-dot ${n.level}"></span><span class="notif-text">${n.text}</span><span class="notif-time">${n.time}</span></div>`
       ).join('');
@@ -324,7 +418,7 @@
 
     function renderGrid() {
       const el = document.getElementById('grid');
-      if (!actions.length) { el.innerHTML = '<div class="empty">No actions yet.<br>Tap <b>Config</b> to add.</div>'; return; }
+      if (!actions.length) { el.innerHTML = `<div class="empty">${t('noActions')}<br>${t('tapConfig')}</div>`; return; }
       el.innerHTML = actions.map(a => `<div class="tile" onclick="exec('${a.id}')">${getTileIcon(a)}<span>${a.label}</span></div>`).join('');
       lucide.createIcons();
     }
@@ -360,27 +454,21 @@
     }
 
     function renderSettings() {
-      const themes = [
-        {id:'midnight',color:'#a78bfa',name:'Midnight'},
-        {id:'ocean',color:'#38bdf8',name:'Ocean'},
-        {id:'ember',color:'#fb923c',name:'Ember'},
-        {id:'forest',color:'#4ade80',name:'Forest'},
-        {id:'rose',color:'#f472b6',name:'Rose'},
-        {id:'ice',color:'#67e8f9',name:'Ice'},
-        {id:'gold',color:'#fbbf24',name:'Gold'},
-        {id:'crimson',color:'#f43f5e',name:'Crimson'},
-      ];
+      const themes = [{id:'midnight',color:'#a78bfa',name:'Midnight'},{id:'ocean',color:'#38bdf8',name:'Ocean'},{id:'ember',color:'#fb923c',name:'Ember'},{id:'forest',color:'#4ade80',name:'Forest'},{id:'rose',color:'#f472b6',name:'Rose'},{id:'ice',color:'#67e8f9',name:'Ice'},{id:'gold',color:'#fbbf24',name:'Gold'},{id:'crimson',color:'#f43f5e',name:'Crimson'}];
       let html = `<div style="border:none;margin:0;padding:0">`;
-      // Workspaces
-      html += `<h4 style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px">Workspaces</h4>`;
+      html += `<h4 style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px">${t('workspaces')}</h4>`;
       html += workspaces.map(w => `<div class="config-item" style="cursor:pointer;${w.url===activeWorkspace?'border-color:var(--accent);background:var(--accent-soft)':''}" onclick="switchWorkspace('${w.url}')"><div style="width:8px;height:8px;border-radius:50%;background:${w.url===activeWorkspace?'var(--green)':'var(--text-dim)'};flex-shrink:0"></div><div class="info"><p>${w.name}</p><small>${w.url}</small></div><button class="del" onclick="event.stopPropagation();removeWorkspace('${w.url}')">×</button></div>`).join('');
-      html += `<div style="display:flex;gap:8px;margin-top:8px"><button class="add-btn" onclick="scanForHosts()" style="flex:1;margin:0;padding:12px" id="scan-btn"><i data-lucide="radar" style="width:14px;height:14px;display:inline;vertical-align:middle;margin-right:4px"></i> Scan</button><button class="add-btn" onclick="addWorkspaceManual()" style="flex:1;margin:0;padding:12px"><i data-lucide="plus" style="width:14px;height:14px;display:inline;vertical-align:middle;margin-right:4px"></i> Manual</button></div>`;
-      // Theme
-      html += `<h4 style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;margin-top:20px">Theme</h4><div class="theme-grid">`;
-      html += themes.map(t => `<button class="theme-btn ${currentTheme===t.id?'active':''}" style="background:${t.color}" onclick="setTheme('${t.id}')"><span>${t.name}</span></button>`).join('');
-      html += `</div><h4 style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;margin-top:16px">Sound</h4><div class="sound-toggle"><span>Notification sound</span><button class="toggle ${soundEnabled?'on':''}" onclick="toggleSound()"></button></div></div>`;
+      html += `<div style="display:flex;gap:8px;margin-top:8px"><button class="add-btn" onclick="scanForHosts()" style="flex:1;margin:0;padding:12px" id="scan-btn"><i data-lucide="radar" style="width:14px;height:14px;display:inline;vertical-align:middle;margin-right:4px"></i> ${t('scan')}</button><button class="add-btn" onclick="addWorkspaceManual()" style="flex:1;margin:0;padding:12px"><i data-lucide="plus" style="width:14px;height:14px;display:inline;vertical-align:middle;margin-right:4px"></i> ${t('manual')}</button></div>`;
+      html += `<h4 style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;margin-top:20px">${t('theme')}</h4><div class="theme-grid">`;
+      html += themes.map(th => `<button class="theme-btn ${currentTheme===th.id?'active':''}" style="background:${th.color}" onclick="setTheme('${th.id}')"><span>${th.name}</span></button>`).join('');
+      html += `</div>`;
+      html += `<h4 style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;margin-top:16px">${t('language')}</h4>`;
+      html += `<div style="display:flex;gap:8px"><button onclick="setLang('en')" style="flex:1;padding:10px;border-radius:10px;border:1px solid ${lang==='en'?'var(--accent)':'var(--glass-border)'};background:${lang==='en'?'var(--accent-soft)':'transparent'};color:${lang==='en'?'var(--accent)':'var(--text-dim)'};font-size:12px;font-weight:600;cursor:pointer">English</button><button onclick="setLang('es')" style="flex:1;padding:10px;border-radius:10px;border:1px solid ${lang==='es'?'var(--accent)':'var(--glass-border)'};background:${lang==='es'?'var(--accent-soft)':'transparent'};color:${lang==='es'?'var(--accent)':'var(--text-dim)'};font-size:12px;font-weight:600;cursor:pointer">Español</button></div>`;
+      html += `<h4 style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;margin-top:16px">${t('sound')}</h4><div class="sound-toggle"><span>${t('notifSound')}</span><button class="toggle ${soundEnabled?'on':''}" onclick="toggleSound()"></button></div></div>`;
       return html;
     }
+
+    function setLang(l) { lang = l; localStorage.setItem('deck-lang', l); renderConfig(); renderGrid(); renderNotifs(); }
 
     function switchWorkspace(url) { connectTo(url); renderConfig(); }
     function removeWorkspace(url) {

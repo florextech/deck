@@ -1,13 +1,14 @@
 # Deck
 
-Stream Deck for your tablet. Configure buttons on your phone/tablet that execute actions on your PC.
+Stream Deck for your tablet. Configure buttons that execute actions on your PC.
 
 ## How it works
 
 ```
 Tablet/Phone  ──ws──▶  Server (:4000)  ──ws──▶  Desktop Agent (your PC)
-   (browser)            relays commands           executes: open apps,
-   tap buttons          serves UI                 copy text, run commands
+   (browser)            serves UI +              executes: open apps,
+   tap buttons          relays commands          copy text, run commands
+                        + notifications          + captures PC notifications
 ```
 
 ## Quick Start
@@ -17,11 +18,25 @@ pnpm install
 pnpm dev
 ```
 
-Scan the QR code shown in terminal with your tablet. Done.
+Scan the QR code shown in terminal with your tablet.
+
+## Features
+
+- **Action grid** — configurable buttons that execute on your PC
+- **Notifications** — real-time PC notifications on your tablet (macOS, Windows, Linux)
+- **Multi-workspace** — connect one tablet to multiple PCs, switch between them
+- **Themes** — 8 themes (Midnight, Ocean, Ember, Forest, Rose, Ice, Gold, Crimson)
+- **i18n** — English and Spanish
+- **Sound** — notification sound with toggle
+- **App detection** — auto-detects installed apps on your PC
+- **Network scan** — auto-discover other PCs running Deck
+- **Roles** — PC can configure, tablet can only execute
+- **PWA** — install as fullscreen app on tablet
+- **Installer** — generate .dmg/.exe with Electron
 
 ## Configure
 
-**From the tablet:** Tap Config → Add action → pick type → done.
+**From the PC:** Open `http://localhost:4000` → Config → Actions → Add
 
 **From a file:** Edit `deck.config.json`:
 
@@ -29,47 +44,47 @@ Scan the QR code shown in terminal with your tablet. Done.
 {
   "actions": [
     { "id": "1", "label": "GitHub", "type": "url", "payload": { "type": "url", "url": "https://github.com" } },
-    { "id": "2", "label": "Copy Key", "type": "copy", "payload": { "type": "copy", "text": "my-ssh-key" } },
+    { "id": "2", "label": "Copy Key", "type": "copy", "payload": { "type": "copy", "text": "my-key" } },
     { "id": "3", "label": "Deploy", "type": "command", "payload": { "type": "command", "command": "cd ~/app && pnpm deploy" } }
   ]
 }
 ```
 
-Hot-reload: save the file → buttons update instantly on the tablet.
-
-## Send notifications to tablet
+## Send notifications
 
 ```bash
 curl -X POST http://localhost:4000/notify \
   -H "Content-Type: application/json" \
-  -d '{"title": "Deploy done ✓", "level": "success"}'
+  -d '{"title": "Deploy done", "level": "success"}'
 ```
 
-## Install as standalone (no Docker needed)
+Or use the helper: `./scripts/deck-notify "message" level`
+
+## Build installer (no Docker needed)
 
 ```bash
-pnpm build:standalone
+pnpm build:installer       # Mac (.dmg)
+pnpm build:installer:win   # Windows (.exe)
 ```
-
-This creates a single executable in `dist/` that you can run anywhere without Node.js installed.
 
 ## Structure
 
 ```
-deck.config.json    ← your buttons (edit this)
+deck.config.json    ← your buttons
 apps/
   server/           ← serves UI + WebSocket relay
-  agent/            ← runs on PC, executes commands
+  agent/            ← runs on PC, executes commands + captures notifications
+electron/           ← Electron wrapper for installer
 ```
 
 ## Scripts
 
 ```bash
-pnpm dev            # server + agent (shows QR)
-pnpm dev:server     # only server
-pnpm dev:agent      # only agent
-pnpm test           # tests
-pnpm build:standalone  # create executable
+pnpm dev              # server + agent (shows QR)
+pnpm test             # tests
+pnpm lint             # eslint
+pnpm typecheck        # typescript
+pnpm build:installer  # .dmg/.exe
 ```
 
 ## License
