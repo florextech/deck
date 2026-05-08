@@ -597,11 +597,30 @@
 
     // Drag & drop reorder (host only)
     let dragId = null;
-    function dragStart(e, id) { dragId = id; e.target.classList.add('dragging'); }
-    function dragOver(e) { e.preventDefault(); e.currentTarget.classList.add('drag-over'); }
-    function dragEnd(e) { e.target.classList.remove('dragging'); document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over')); }
-    function drop(e, targetId) {
-      e.preventDefault(); e.currentTarget.classList.remove('drag-over');
+    // Drag & drop via delegation
+    const gridPages = document.getElementById('grid-pages');
+    gridPages.addEventListener('dragstart', (e) => {
+      const tile = e.target.closest('[data-action-id]');
+      if (tile) { dragId = tile.dataset.actionId; tile.classList.add('dragging'); }
+    });
+    gridPages.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      const tile = e.target.closest('[data-action-id]');
+      if (tile) tile.classList.add('drag-over');
+    });
+    gridPages.addEventListener('dragleave', (e) => {
+      const tile = e.target.closest('[data-action-id]');
+      if (tile) tile.classList.remove('drag-over');
+    });
+    gridPages.addEventListener('dragend', () => {
+      document.querySelectorAll('.dragging,.drag-over').forEach(el => el.classList.remove('dragging', 'drag-over'));
+    });
+    gridPages.addEventListener('drop', (e) => {
+      e.preventDefault();
+      const tile = e.target.closest('[data-action-id]');
+      if (!tile) return;
+      tile.classList.remove('drag-over');
+      const targetId = tile.dataset.actionId;
       if (!dragId || dragId === targetId) return;
       const fromIdx = actions.findIndex(a => a.id === dragId);
       const toIdx = actions.findIndex(a => a.id === targetId);
@@ -610,7 +629,7 @@
       actions.splice(toIdx, 0, item);
       save();
       dragId = null;
-    }
+    });
 
     function renderConfig() {
       const el = document.getElementById('config');
@@ -694,10 +713,13 @@
       if (!el) return;
       fetch('/plugins/store').then(r => r.json()).then(data => {
         if (!data.plugins || !data.plugins.length) { el.innerHTML = `<p style="text-align:center;padding:20px;color:var(--text-dim)">${lang==='es'?'No hay plugins disponibles':'No plugins available'}</p>`; return; }
-        el.innerHTML = data.plugins.map(p => `<div style="margin-bottom:10px;border-radius:14px;border:1px solid var(--glass-border);background:var(--glass);overflow:hidden"><div style="display:flex;align-items:center;gap:12px;padding:12px 14px"><div style="flex:1;min-width:0"><p style="font-size:13px;font-weight:500">${p.name} ${p.official?'<span style="font-size:9px;background:var(--accent-soft);color:var(--accent);padding:2px 6px;border-radius:4px;margin-left:4px">Official</span>':''}</p><small style="color:var(--text-dim)">${p.description}</small><div style="margin-top:4px;display:flex;gap:4px;flex-wrap:wrap">${(p.tags||[]).map(tag => `<span style="font-size:9px;padding:2px 6px;border-radius:4px;background:var(--glass);border:1px solid var(--glass-border);color:var(--text-dim)">${tag}</span>`).join('')}</div></div><button data-install-id="${p.id}" data-install-url="${p.url}" style="padding:8px 14px;border-radius:8px;border:1px solid ${p.installed?'var(--green)':'var(--accent)'};background:${p.installed?'transparent':'var(--accent-soft)'};color:${p.installed?'var(--green)':'var(--accent)'};font-size:11px;font-weight:600;cursor:pointer;flex-shrink:0">${p.installed?(lang==='es'?'✓ Instalado':'✓ Installed'):(lang==='es'?'Instalar':'Install')}</button></div>${p.readme?`<details style="padding:0 14px 14px"><summary style="font-size:12px;color:var(--accent);cursor:pointer;padding:6px 0;font-weight:500">${lang==='es'?'Ver detalles':'View details'}</summary><div style="margin-top:10px;font-size:13px;color:var(--text);line-height:1.7">${renderMd(p.readme)}</div></details>`:''}</div>`).join('');
-        // Event delegation for install buttons
+        el.innerHTML = data.plugins.map(p => `<div style="margin-bottom:10px;border-radius:14px;border:1px solid var(--glass-border);background:var(--glass);overflow:hidden"><div style="display:flex;align-items:center;gap:10px;padding:12px 14px"><div style="flex:1;min-width:0"><p style="font-size:13px;font-weight:500">${p.name} ${p.official?'<span style="font-size:9px;background:var(--accent-soft);color:var(--accent);padding:2px 6px;border-radius:4px;margin-left:4px">Official</span>':''}</p><small style="color:var(--text-dim)">${p.description}</small></div>${p.installed?`<button data-uninstall-id="${p.id}" style="padding:6px 10px;border-radius:8px;border:1px solid var(--red);background:transparent;color:var(--red);font-size:10px;font-weight:600;cursor:pointer">${lang==='es'?'Quitar':'Remove'}</button>`:`<button data-install-id="${p.id}" data-install-url="${p.url}" style="padding:8px 14px;border-radius:8px;border:1px solid var(--accent);background:var(--accent-soft);color:var(--accent);font-size:11px;font-weight:600;cursor:pointer">${lang==='es'?'Instalar':'Install'}</button>`}</div>${p.readme?`<details style="padding:0 14px 12px"><summary style="font-size:11px;color:var(--accent);cursor:pointer;padding:4px 0">${lang==='es'?'Ver detalles':'View details'}</summary><div style="margin-top:6px;font-size:11px;color:var(--text);line-height:1.5">${renderMd(p.readme)}</div></details>`:''}</div>`).join('');
+        // Event delegation for install/uninstall buttons
         el.querySelectorAll('[data-install-id]').forEach(btn => {
           btn.addEventListener('click', () => installPlugin(btn.dataset.installId, btn.dataset.installUrl));
+        });
+        el.querySelectorAll('[data-uninstall-id]').forEach(btn => {
+          btn.addEventListener('click', () => uninstallPlugin(btn.dataset.uninstallId));
         });
       }).catch(() => { el.innerHTML = `<p style="color:var(--text-dim)">${lang==='es'?'No se pudo cargar la tienda':'Could not load store'}</p>`; });
     }
@@ -707,6 +729,13 @@
         .then(r => r.json())
         .then(d => { if (d.ok) { addNotif(lang==='es'?'Plugin instalado. Reinicia para activar.':'Plugin installed. Restart to activate.', 'success'); loadPluginStore(); } else { addNotif(d.error || 'Error', 'error'); } })
         .catch(() => addNotif('Install failed', 'error'));
+    }
+
+    function uninstallPlugin(id) {
+      fetch('/plugins/uninstall', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({id}) })
+        .then(r => r.json())
+        .then(d => { if (d.ok) { addNotif(lang==='es'?'Plugin eliminado. Reinicia para aplicar.':'Plugin removed. Restart to apply.', 'success'); loadPluginStore(); } else { addNotif(d.error || 'Error', 'error'); } })
+        .catch(() => addNotif('Uninstall failed', 'error'));
     }
 
     const CURRENT_VERSION = '0.2.0';

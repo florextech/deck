@@ -232,6 +232,17 @@ app.post("/plugins/install", async (req, res) => {
   } catch (e) { res.status(500).json({ error: (e as Error).message }); }
 });
 
+app.post("/plugins/uninstall", (req, res) => {
+  try {
+    const { id } = req.body as { id: string };
+    if (!id) { res.status(400).json({ error: "id required" }); return; }
+    const pluginsDir = resolve(CONFIG_PATH, "../plugins");
+    const filePath = resolve(pluginsDir, `${id}.js`);
+    if (existsSync(filePath)) { const { unlinkSync } = require("node:fs"); unlinkSync(filePath); }
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: (e as Error).message }); }
+});
+
 httpServer.listen(PORT, "0.0.0.0", () => {
   console.log(`[deck] Server on http://localhost:${PORT}`);
   console.log(`[deck] Config: ${CONFIG_PATH} (${actions.length} actions)`);
