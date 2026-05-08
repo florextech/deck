@@ -42,9 +42,11 @@ app.whenReady().then(() => {
 
   // Window
   win = new BrowserWindow({
-    width: 420,
-    height: 300,
-    resizable: false,
+    width: 900,
+    height: 700,
+    minWidth: 400,
+    minHeight: 500,
+    resizable: true,
     titleBarStyle: "hiddenInset",
     backgroundColor: "#09090b",
     webPreferences: { nodeIntegration: false },
