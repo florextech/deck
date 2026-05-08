@@ -114,7 +114,7 @@
     .tile:active { transform:scale(0.88); background:var(--glass-strong); border-color:var(--glass-border-active); box-shadow:0 0 24px var(--glass-glow); }
     .tile .tile-icon { width:32px; height:32px; display:flex; align-items:center; justify-content:center; flex-shrink:0; color:var(--accent); }
     .tile .tile-icon svg { width:28px; height:28px; }
-    .tile .tile-icon img { width:32px; height:32px; border-radius:6px; object-fit:contain; }
+    .tile .tile-icon img { width:32px; height:32px; border-radius:6px; object-fit:contain; filter:brightness(0) invert(1); }
     .tile span { font-size:10px; font-weight:500; text-align:center; line-height:1.2; word-break:break-word; max-width:100%; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; color:var(--text); opacity:.85; }
 
     /* Config */
@@ -166,7 +166,7 @@
     #apps-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; max-height:50vh; overflow-y:auto; padding:4px 0; }
     #apps-grid button { display:flex; flex-direction:column; align-items:center; gap:8px; padding:16px 8px; border-radius:14px; border:1px solid var(--glass-border); background:var(--glass); color:var(--text); cursor:pointer; font-size:11px; font-weight:500; text-align:center; word-break:break-word; line-height:1.2; transition:background .15s,border-color .15s,transform .1s; }
     #apps-grid button:active { background:var(--accent-soft); border-color:var(--accent); transform:scale(0.93); }
-    #apps-grid button img { width:32px; height:32px; border-radius:8px; }
+    #apps-grid button img { width:32px; height:32px; border-radius:8px; filter:brightness(0) invert(1); }
     #apps-grid button i { color:var(--accent); width:28px; height:28px; }
     /* Back button in modal */
     .modal-back { display:flex; align-items:center; justify-content:center; gap:6px; margin-top:14px; padding:12px; border-radius:12px; border:1px solid var(--glass-border); background:none; color:var(--text-dim); font-size:13px; font-weight:500; cursor:pointer; width:100%; transition:background .15s,color .15s; }
@@ -252,11 +252,11 @@
           <label style="display:flex;align-items:center;gap:8px;padding:8px 0;font-size:12px;color:var(--text-dim);cursor:pointer"><input type="checkbox" id="mf-confirm" style="width:16px;height:16px;accent-color:var(--accent)"> <span id="mf-confirm-label"></span></label>
           <button type="submit" class="submit-btn" id="mf-submit-btn"></button>
         </form>
-        <button class="modal-back" onclick="modalBack()">← Back</button>
+        <button class="modal-back" id="back-btn-form" onclick="modalBack()"></button>
       </div>
       <div id="modal-step-apps" style="display:none">
         <div id="apps-grid"></div>
-        <button class="modal-back" onclick="modalBack()">← Back</button>
+        <button class="modal-back" id="back-btn-apps" onclick="modalBack()"></button>
       </div>
     </div>
   </div>
@@ -693,7 +693,7 @@
     function showDeck() { document.getElementById('grid').classList.remove('hidden'); document.getElementById('config').classList.remove('active'); document.getElementById('nav-deck').classList.add('active'); document.getElementById('nav-config').classList.remove('active'); }
     function showConfig() { document.getElementById('grid').classList.add('hidden'); document.getElementById('config').classList.add('active'); document.getElementById('nav-deck').classList.remove('active'); document.getElementById('nav-config').classList.add('active'); renderConfig(); }
 
-    function openModal() { document.getElementById('modal').classList.add('active'); document.getElementById('modal-step1').style.display=''; document.getElementById('modal-step2').style.display='none'; document.getElementById('modal-step-apps').style.display='none'; document.getElementById('modal-title').textContent='Add action'; }
+    function openModal() { document.getElementById('modal').classList.add('active'); document.getElementById('modal-step1').style.display=''; document.getElementById('modal-step2').style.display='none'; document.getElementById('modal-step-apps').style.display='none'; document.getElementById('modal-title').textContent=t('addActionTitle'); document.getElementById('back-btn-form').textContent=t('back'); document.getElementById('back-btn-apps').textContent=t('back'); }
     function closeModal() { document.getElementById('modal').classList.remove('active'); }
     function modalBack() { document.getElementById('modal-step1').style.display=''; document.getElementById('modal-step2').style.display='none'; document.getElementById('modal-step-apps').style.display='none'; document.getElementById('modal-title').textContent='Add action'; }
 
