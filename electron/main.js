@@ -1,13 +1,13 @@
-const { app, BrowserWindow, Tray, Menu } = require("electron");
+const { app, BrowserWindow, Tray, Menu, shell } = require("electron");
 const { fork } = require("child_process");
 const { networkInterfaces } = require("os");
 const path = require("path");
-const qrcode = require("qrcode-terminal");
 
 const PORT = 4000;
 let tray = null;
 let serverProcess = null;
 let agentProcess = null;
+let win = null;
 
 function getLocalIP() {
   const nets = networkInterfaces();
@@ -19,44 +19,80 @@ function getLocalIP() {
   return "localhost";
 }
 
+function getResourcePath(file) {
+  // In packaged app, files are in app.asar or resources
+  if (app.isPackaged) {
+    return path.join(process.resourcesPath, "app.asar", file);
+  }
+  return path.join(__dirname, file);
+}
+
 app.whenReady().then(() => {
+  const serverPath = getResourcePath("server.js");
+  const agentPath = getResourcePath("agent.js");
+  const configPath = app.isPackaged
+    ? path.join(app.getPath("userData"), "deck.config.json")
+    : path.join(__dirname, "deck.config.json");
+
+  // Copy default config if not exists
+  const fs = require("fs");
+  if (!fs.existsSync(configPath)) {
+    const defaultConfig = getResourcePath("deck.config.json");
+    if (fs.existsSync(defaultConfig)) fs.copyFileSync(defaultConfig, configPath);
+    else fs.writeFileSync(configPath, JSON.stringify({ actions: [] }, null, 2));
+  }
+
   // Start server
-  serverProcess = fork(path.join(__dirname, "server.js"), [], {
-    env: { ...process.env, PORT: String(PORT), CONFIG_PATH: path.join(__dirname, "deck.config.json") },
+  serverProcess = fork(serverPath, [], {
+    env: { ...process.env, PORT: String(PORT), CONFIG_PATH: configPath },
+    silent: true,
   });
+  serverProcess.stdout?.on("data", (d) => console.log(`[server] ${d}`));
+  serverProcess.stderr?.on("data", (d) => console.error(`[server] ${d}`));
 
   // Start agent
-  agentProcess = fork(path.join(__dirname, "agent.js"), [], {
+  agentProcess = fork(agentPath, [], {
     env: { ...process.env, SERVER_URL: `http://localhost:${PORT}` },
+    silent: true,
   });
 
   const ip = getLocalIP();
   const url = `http://${ip}:${PORT}`;
+  console.log(`Deck running at: ${url}`);
 
-  // Show QR in terminal
-  console.log(`\n  Deck running at: ${url}\n`);
-  qrcode.generate(url, { small: true });
+  // Window
+  win = new BrowserWindow({
+    width: 420,
+    height: 320,
+    resizable: false,
+    titleBarStyle: "hiddenInset",
+    backgroundColor: "#09090b",
+  });
 
-  // System tray
-  tray = new Tray(path.join(__dirname, "build", "tray-icon.png"));
-  const contextMenu = Menu.buildFromTemplate([
-    { label: `Open: ${url}`, click: () => require("electron").shell.openExternal(url) },
-    { type: "separator" },
-    { label: "Quit", click: () => app.quit() },
-  ]);
-  tray.setToolTip("Deck");
-  tray.setContextMenu(contextMenu);
-
-  // Optional: open a small window
-  const win = new BrowserWindow({ width: 400, height: 300, resizable: false, titleBarStyle: "hiddenInset" });
   win.loadURL(`data:text/html,
-    <body style="background:#09090b;color:#fafafa;font-family:system-ui;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;margin:0">
-      <h2 style="font-size:18px;margin-bottom:8px">Deck is running</h2>
-      <p style="color:#71717a;font-size:13px;margin-bottom:16px">Open on your tablet:</p>
-      <code style="background:#18181b;padding:8px 16px;border-radius:8px;font-size:14px;color:#a78bfa">${url}</code>
-      <p style="color:#52525b;font-size:11px;margin-top:20px">Or scan the QR code in terminal</p>
+    <body style="background:#09090b;color:#fafafa;font-family:-apple-system,system-ui,sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;margin:0;gap:12px">
+      <h2 style="font-size:18px;font-weight:600;margin:0">Deck is running</h2>
+      <p style="color:#71717a;font-size:13px;margin:0">Open on your tablet:</p>
+      <code style="background:#18181b;padding:10px 20px;border-radius:10px;font-size:15px;color:#a78bfa">${url}</code>
+      <p style="color:#52525b;font-size:11px;margin-top:8px">Config: ${configPath.replace(/'/g, "\\'")}</p>
     </body>
   `);
+
+  // Tray
+  try {
+    const trayIcon = app.isPackaged
+      ? path.join(process.resourcesPath, "app.asar", "build", "tray-icon.png")
+      : path.join(__dirname, "build", "tray-icon.png");
+    tray = new Tray(trayIcon);
+    tray.setToolTip("Deck");
+    tray.setContextMenu(Menu.buildFromTemplate([
+      { label: `Open: ${url}`, click: () => shell.openExternal(url) },
+      { type: "separator" },
+      { label: "Quit", click: () => app.quit() },
+    ]));
+  } catch (e) {
+    console.log("Tray icon not available:", e.message);
+  }
 });
 
 app.on("before-quit", () => {
@@ -64,4 +100,6 @@ app.on("before-quit", () => {
   if (agentProcess) agentProcess.kill();
 });
 
-app.on("window-all-closed", (e) => e.preventDefault());
+app.on("window-all-closed", () => {
+  // Keep running in tray
+});
