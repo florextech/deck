@@ -90,8 +90,6 @@ app.get("/health", (req, res) => {
   const ip = localIps[0] ?? "localhost";
   res.json({ status: "ok", agent: !!agentSocket, actions: actions.length, isLocal, url: `http://${ip}:${PORT}` });
 });
-  res.json({ status: "ok", agent: !!agentSocket, actions: actions.length, isLocal });
-});
 
 // Get detected apps from agent
 app.get("/apps", (_req, res) => {
