@@ -222,7 +222,7 @@ app.whenReady().then(() => {
     };
     loadPage();
     win.webContents.on('did-finish-load', () => {
-      win.webContents.insertCSS('body { padding-top: 38px !important; }');
+      win.webContents.insertCSS('body { padding-top: 38px !important; } body::before { content:""; position:fixed; top:0; left:0; right:0; height:38px; -webkit-app-region:drag; z-index:9999; }');
     });
   }, 2000);
 
