@@ -258,7 +258,7 @@
           <input id="mf-value" required>
           <input id="mf-icon" placeholder="">
           <input id="mf-icon-file" type="file" accept="image/*" style="display:none">
-          <button type="button" id="mf-icon-upload" style="padding:8px 12px;border-radius:8px;border:1px solid var(--glass-border);background:var(--glass);color:var(--text-dim);font-size:11px;cursor:pointer;margin-bottom:8px">📎 Upload icon</button>
+          <button type="button" id="mf-icon-upload" style="padding:8px 12px;border-radius:8px;border:1px solid var(--glass-border);background:var(--glass);color:var(--text-dim);font-size:11px;cursor:pointer;margin-bottom:8px">Upload icon</button>
           <input id="mf-category" placeholder="">
           <label style="display:flex;align-items:center;gap:8px;padding:8px 0;font-size:12px;color:var(--text-dim);cursor:pointer"><input type="checkbox" id="mf-confirm" style="width:16px;height:16px;accent-color:var(--accent)"> <span id="mf-confirm-label"></span></label>
           <button type="submit" class="submit-btn" id="mf-submit-btn"></button>
@@ -928,7 +928,7 @@
       document.getElementById('mf-label').value = '';
       document.getElementById('mf-icon').value = '';
       document.getElementById('mf-icon-file').value = '';
-      document.getElementById('mf-icon-upload').textContent = '📎 Upload icon';
+      document.getElementById('mf-icon-upload').textContent = 'Upload icon';
       document.getElementById('mf-value').value = '';
       document.getElementById('mf-category').value = '';
       document.getElementById('mf-confirm').checked = false;
@@ -941,7 +941,7 @@
       const file = e.target.files[0];
       if (!file) return;
       const reader = new FileReader();
-      reader.onload = () => { document.getElementById('mf-icon').value = reader.result; document.getElementById('mf-icon-upload').textContent = '✓ ' + file.name; };
+      reader.onload = () => { document.getElementById('mf-icon').value = reader.result; document.getElementById('mf-icon-upload').textContent = file.name; };
       reader.readAsDataURL(file);
     };
 
