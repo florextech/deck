@@ -32,6 +32,10 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: cd electron && npm install
+      - name: Set version from tag
+        run: |
+          VERSION=${GITHUB_REF_NAME#v}
+          cd electron && npm version $VERSION --no-git-tag-version
       - name: Build
         run: cd electron && ${{ matrix.build_cmd }}
       - uses: actions/upload-artifact@v4

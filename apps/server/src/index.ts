@@ -89,7 +89,7 @@ app.get("/health", (req, res) => {
   const localIps = Object.values(networkInterfaces()).flat().filter(n => n && n.family === "IPv4" && !n.internal).map(n => n!.address);
   const isLocal = remoteIp === "127.0.0.1" || remoteIp === "::1" || localIps.includes(remoteIp);
   const ip = localIps[0] ?? "localhost";
-  res.json({ status: "ok", agent: !!agentSocket, actions: actions.length, isLocal, url: `http://${ip}:${PORT}` });
+  res.json({ status: "ok", agent: !!agentSocket, actions: actions.length, isLocal, url: `http://${ip}:${PORT}`, version: process.env.npm_package_version ?? "0.2.0" });
 });
 
 app.get("/qr", async (_req, res) => {
