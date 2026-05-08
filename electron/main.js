@@ -114,7 +114,7 @@ app.whenReady().then(() => {
   function detectApps() {
     if (os !== "darwin") return [];
     const dirs = ["/Applications", "/System/Applications"];
-    const iconUrls = { "Google Chrome": "https://cdn.simpleicons.org/googlechrome", "Firefox": "https://cdn.simpleicons.org/firefox", "Safari": "https://cdn.simpleicons.org/safari", "Visual Studio Code": "https://cdn.simpleicons.org/visualstudiocode", "Slack": "https://cdn.simpleicons.org/slack", "Discord": "https://cdn.simpleicons.org/discord", "Spotify": "https://cdn.simpleicons.org/spotify", "Docker Desktop": "https://cdn.simpleicons.org/docker", "Figma": "https://cdn.simpleicons.org/figma", "Notion": "https://cdn.simpleicons.org/notion", "Telegram": "https://cdn.simpleicons.org/telegram" };
+    const iconUrls = { "Google Chrome": "https://cdn.simpleicons.org/googlechrome", "Firefox": "https://cdn.simpleicons.org/firefox", "Safari": "https://cdn.simpleicons.org/safari", "Visual Studio Code": "https://cdn.simpleicons.org/vscodium", "Slack": "https://cdn.simpleicons.org/slack", "Discord": "https://cdn.simpleicons.org/discord", "Spotify": "https://cdn.simpleicons.org/spotify", "Docker Desktop": "https://cdn.simpleicons.org/docker", "Figma": "https://cdn.simpleicons.org/figma", "Notion": "https://cdn.simpleicons.org/notion", "Telegram": "https://cdn.simpleicons.org/telegram" };
     const apps = [];
     for (const dir of dirs) {
       if (!existsSync(dir)) continue;

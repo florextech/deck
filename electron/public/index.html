@@ -467,7 +467,7 @@
 
     // Tile icon: custom image URL only if set, otherwise Lucide
     function getTileIcon(a) {
-      if (a.icon && a.icon.startsWith('http')) return `<div class="tile-icon"><img src="${a.icon}" alt=""></div>`;
+      if (a.icon && a.icon.startsWith('http')) return `<div class="tile-icon"><img src="${a.icon}" alt="" onerror="this.style.display='none'"></div>`;
       const lucideMap = { url: 'globe', copy: 'clipboard', command: 'terminal' };
       return `<div class="tile-icon"><i data-lucide="${lucideMap[a.type] || 'zap'}"></i></div>`;
     }
@@ -732,7 +732,7 @@
         const grid = document.getElementById('apps-grid');
         if (!data.apps || !data.apps.length) { grid.innerHTML = '<p style="grid-column:1/-1;text-align:center;color:var(--text-dim);padding:20px;font-size:12px">Agent not connected.<br>Start agent on your PC.</p>'; return; }
         grid.innerHTML = data.apps.map(a => {
-          const iconHtml = a.icon ? `<img src="${a.icon}" alt="" onerror="this.replaceWith(document.createElement('i'));this.nextSibling||0;this.parentNode.querySelector('i')?.setAttribute('data-lucide','app-window');lucide.createIcons()">` : `<i data-lucide="app-window"></i>`;
+          const iconHtml = a.icon ? `<img src="${a.icon}" alt="" onerror="this.style.display='none'">` : `<i data-lucide="app-window"></i>`;
           return `<button onclick="addApp('${a.name.replace(/'/g,"\\'")}','${a.command.replace(/'/g,"\\'")}','${(a.icon||'').replace(/'/g,"\\'")}')">${iconHtml}<span>${a.name}</span></button>`;
         }).join('');
         lucide.createIcons();

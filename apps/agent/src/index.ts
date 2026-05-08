@@ -81,7 +81,7 @@ function detectMacApps(): DetectedApp[] {
     "Firefox": "https://cdn.simpleicons.org/firefox",
     "Safari": "https://cdn.simpleicons.org/safari",
     "Arc": "https://cdn.simpleicons.org/arc",
-    "Visual Studio Code": "https://cdn.simpleicons.org/visualstudiocode",
+    "Visual Studio Code": "https://cdn.simpleicons.org/vscodium",
     "Cursor": "https://cdn.simpleicons.org/cursor",
     "Slack": "https://cdn.simpleicons.org/slack",
     "Discord": "https://cdn.simpleicons.org/discord",
