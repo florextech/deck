@@ -2,7 +2,12 @@
   "name": "deck",
   "version": "0.1.0",
   "description": "Stream Deck for your tablet",
+  "author": "Florex Labs",
   "main": "main.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/florextech/deck.git"
+  },
   "scripts": {
     "start": "electron .",
     "build:mac": "electron-builder --mac",
@@ -12,6 +17,7 @@
   "build": {
     "appId": "com.deck.app",
     "productName": "Deck",
+    "publish": null,
     "files": [
       "main.js",
       "agent.js",
@@ -31,7 +37,8 @@
       "icon": "build/icon.ico"
     },
     "linux": {
-      "target": "AppImage"
+      "target": "AppImage",
+      "category": "Utility"
     },
     "nsis": {
       "oneClick": true,
