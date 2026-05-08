@@ -21,7 +21,7 @@ function log(msg) { const entry = `[${new Date().toLocaleTimeString()}] ${msg}`;
 
 function httpsGet(url) {
   return new Promise((resolve, reject) => {
-    https.get(url, (res) => {
+    https.get(url, { rejectUnauthorized: false }, (res) => {
       if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
         return httpsGet(res.headers.location).then(resolve).catch(reject);
       }
