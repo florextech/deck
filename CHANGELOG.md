@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.6.0] - 2026-05-08
+
+### Added
+- Enable/disable plugins without uninstalling (toggle in plugin store)
+- Platform support field for plugins (macOS, Windows, Linux badges)
+- Platform validation on plugin install (warns if unsupported)
+
+### Fixed
+- ESLint errors: removed stale `require()` import, fixed ignore patterns for dist/
+
 ## [0.3.0] - 2026-05-07
 
 ### Added
