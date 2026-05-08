@@ -2,6 +2,10 @@
 
 Stream Deck for your tablet. Configure buttons that execute actions on your PC.
 
+<p align="center">
+  <img src="docs/screenshot.png" alt="Deck — AI Command Center" width="700">
+</p>
+
 ## How it works
 
 ```
