@@ -232,8 +232,6 @@
   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <script>
-    const SERVER = location.origin;
-    const socket = io(SERVER, { transports: ['polling', 'websocket'] });
     let actions = [];
     let currentType = 'url';
     let notifications = [];
@@ -241,15 +239,8 @@
     let currentTheme = localStorage.getItem('deck-theme') || 'midnight';
     let configTab = 'actions';
 
-    // Role: host can edit actions. Host = accessing from localhost OR from the server's own IP.
-    // Simple approach: if you're on the same device, you're host.
-    // We check by comparing: if the page hostname matches the server hostname, you're host.
-    let isHost = (location.hostname === 'localhost' || location.hostname === '127.0.0.1');
-
-    // Also check if accessing from the server's own IP (same PC, different hostname)
-    fetch(location.origin + '/health').then(r => r.json()).then(d => {
-      if (d.status === 'ok' && d.isLocal) { isHost = true; renderConfig(); }
-    }).catch(() => {});
+    // Role: host can edit actions. Determined by server.
+    let isHost = false;
 
     // Workspaces
     let workspaces = JSON.parse(localStorage.getItem('deck-workspaces') || '[]');
@@ -265,14 +256,19 @@
       renderGrid();
       renderNotifs();
 
+      // Check if host
+      fetch(serverUrl + '/health').then(r => r.json()).then(d => {
+        isHost = !!d.isLocal;
+        renderConfig();
+      }).catch(() => { isHost = false; });
+
       socket = io(serverUrl, { transports: ['polling', 'websocket'] });
-      socket.on('connect', () => addNotif('connected to ' + serverUrl, 'success'));
-      socket.on('connect_error', () => addNotif('cannot reach ' + serverUrl, 'error'));
+      socket.on('connect', () => addNotif('connected', 'success'));
+      socket.on('connect_error', () => addNotif('cannot reach server', 'error'));
       socket.on('disconnect', () => addNotif('disconnected', 'warning'));
       socket.on('config:actions', (data) => { actions = data; renderGrid(); renderConfig(); });
       socket.on('notification:new', (n) => { addNotif(n.title, n.level); playNotifSound(); });
     }
-
     // Auto-add current origin as workspace if not in list
     if (!workspaces.find(w => w.url === location.origin)) {
       workspaces.push({ name: location.hostname === 'localhost' ? 'This PC' : location.hostname, url: location.origin });
