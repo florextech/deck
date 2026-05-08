@@ -129,11 +129,16 @@ app.whenReady().then(() => {
 
   win = new BrowserWindow({ width: 900, height: 700, minWidth: 400, minHeight: 500, resizable: true, titleBarStyle: "hiddenInset", trafficLightPosition: { x: 12, y: 12 }, backgroundColor: "#09090b" });
   setTimeout(() => {
-    win.loadURL(`http://localhost:${PORT}`);
+    const loadPage = () => {
+      win.loadURL(`http://localhost:${PORT}`).catch(() => {
+        setTimeout(loadPage, 500);
+      });
+    };
+    loadPage();
     win.webContents.on('did-finish-load', () => {
       win.webContents.insertCSS('body { padding-top: 38px !important; }');
     });
-  }, 1500);
+  }, 2000);
 
   // Tray
   try {
