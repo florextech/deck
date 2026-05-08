@@ -127,10 +127,11 @@
     /* Settings section in config */
     .settings-section { margin-top:16px; padding-top:16px; border-top:1px solid var(--glass-border); }
     .settings-section h4 { font-size:11px; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:10px; }
-    .theme-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:12px; }
-    .theme-btn { width:100%; aspect-ratio:1.4; border-radius:12px; border:2px solid transparent; cursor:pointer; position:relative; transition:border-color .2s,transform .15s; display:flex; align-items:flex-end; justify-content:center; padding-bottom:6px; }
+    .theme-grid { display:flex; gap:8px; overflow-x:auto; padding:4px 0 12px; -webkit-overflow-scrolling:touch; }
+    .theme-grid::-webkit-scrollbar { display:none; }
+    .theme-btn { min-width:60px; height:36px; border-radius:10px; border:2px solid transparent; cursor:pointer; transition:border-color .2s,transform .15s; display:flex; align-items:center; justify-content:center; padding:0 8px; flex-shrink:0; }
     .theme-btn.active { border-color:var(--text); transform:scale(1.05); }
-    .theme-btn span { font-size:9px; font-weight:600; color:#fff; text-shadow:0 1px 3px rgba(0,0,0,0.6); }
+    .theme-btn span { font-size:9px; font-weight:600; color:#fff; text-shadow:0 1px 2px rgba(0,0,0,0.5); }
     .sound-toggle { display:flex; align-items:center; gap:10px; padding:10px 0; }
     .sound-toggle span { font-size:13px; flex:1; }
     .toggle { width:44px; height:24px; border-radius:12px; background:var(--glass-border); cursor:pointer; position:relative; transition:background .2s; border:none; }
