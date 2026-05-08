@@ -24,10 +24,9 @@
     },
     "files": [
       "main.js",
-      "agent.js",
-      "server.js",
       "public/**/*",
-      "deck.config.json"
+      "deck.config.json",
+      "build/**/*"
     ],
     "extraResources": [
       {
