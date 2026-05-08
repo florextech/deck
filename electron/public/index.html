@@ -84,7 +84,7 @@
       font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', system-ui, sans-serif;
       height: 100dvh; display: flex; flex-direction: column; overflow: hidden;
       user-select: none; -webkit-tap-highlight-color: transparent; -webkit-font-smoothing: antialiased;
-      padding-top: env(titlebar-area-height, 0px);
+      font-size: 14px;
     }
     /* macOS Electron titlebar space */
     @media (display-mode: standalone), (display-mode: window-controls-overlay) {
@@ -120,7 +120,7 @@
     .tile .tile-icon { width:32px; height:32px; display:flex; align-items:center; justify-content:center; flex-shrink:0; color:var(--accent); }
     .tile .tile-icon svg { width:28px; height:28px; }
     .tile .tile-icon img { width:32px; height:32px; border-radius:6px; object-fit:contain; filter:brightness(0) invert(1); }
-    .tile span { font-size:10px; font-weight:500; text-align:center; line-height:1.2; word-break:break-word; max-width:100%; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; color:var(--text); opacity:.85; }
+    .tile span { font-size:12px; font-weight:500; text-align:center; line-height:1.3; word-break:break-word; max-width:100%; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; color:var(--text); opacity:.85; }
     .tile-widget { font-size:18px; font-weight:700; color:var(--accent); font-family:-apple-system,system-ui,monospace; }
 
     /* Config */
@@ -191,7 +191,7 @@
 
     /* Nav */
     #nav { position:relative; z-index:1; display:flex; border-top:1px solid var(--glass-border); background:var(--glass); backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px); flex-shrink:0; }
-    #nav button { flex:1; padding:12px 0 10px; display:flex; flex-direction:column; align-items:center; gap:3px; background:none; border:none; color:var(--text-dim); cursor:pointer; font-size:10px; font-weight:500; }
+    #nav button { flex:1; padding:12px 0 10px; display:flex; flex-direction:column; align-items:center; gap:3px; background:none; border:none; color:var(--text-dim); cursor:pointer; font-size:11px; font-weight:500; }
     #nav button.active { color:var(--accent); }
     #nav button svg { width:20px; height:20px; }
     .empty { grid-column:1/-1; text-align:center; color:var(--text-dim); padding:80px 20px; font-size:13px; line-height:1.6; }
