@@ -191,6 +191,33 @@ app.get("/widgets", (_req, res) => {
   res.json(data);
 });
 
+// Plugin store
+const REGISTRY_URL = "https://raw.githubusercontent.com/florextech/deck-plugins/main/registry.json";
+
+app.get("/plugins/store", async (_req, res) => {
+  try {
+    const r = await fetch(REGISTRY_URL);
+    const data = await r.json() as { plugins: unknown[] };
+    // Mark installed plugins
+    const pluginsDir = resolve(CONFIG_PATH, "../plugins");
+    const installed = existsSync(pluginsDir) ? readdirSync(pluginsDir).filter(f => f.endsWith(".js")).map(f => f.replace(".js", "")) : [];
+    res.json({ plugins: (data.plugins as Array<{ id: string }>).map(p => ({ ...p, installed: installed.includes(p.id) })) });
+  } catch { res.json({ plugins: [] }); }
+});
+
+app.post("/plugins/install", async (req, res) => {
+  try {
+    const { id, url } = req.body as { id: string; url: string };
+    if (!id || !url) { res.status(400).json({ error: "id and url required" }); return; }
+    const pluginsDir = resolve(CONFIG_PATH, "../plugins");
+    if (!existsSync(pluginsDir)) { const { mkdirSync } = await import("node:fs"); mkdirSync(pluginsDir, { recursive: true }); }
+    const r = await fetch(url);
+    const code = await r.text();
+    writeFileSync(resolve(pluginsDir, `${id}.js`), code);
+    res.json({ ok: true, message: "Restart to activate" });
+  } catch (e) { res.status(500).json({ error: (e as Error).message }); }
+});
+
 httpServer.listen(PORT, "0.0.0.0", () => {
   console.log(`[deck] Server on http://localhost:${PORT}`);
   console.log(`[deck] Config: ${CONFIG_PATH} (${actions.length} actions)`);

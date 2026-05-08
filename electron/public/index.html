@@ -602,10 +602,11 @@
 
       if (isHost) {
         // Host: tabs Actions / Connect / Settings
-        html += `<div style="display:flex;gap:4px;margin-bottom:12px;">`;
-        html += `<button onclick="configTab='actions';renderConfig()" style="flex:1;padding:10px;border-radius:10px;border:1px solid ${configTab==='actions'?'var(--accent)':'var(--glass-border)'};background:${configTab==='actions'?'var(--accent-soft)':'transparent'};color:${configTab==='actions'?'var(--accent)':'var(--text-dim)'};font-size:12px;font-weight:600;cursor:pointer">${t('actions')}</button>`;
-        html += `<button onclick="configTab='connect';renderConfig()" style="flex:1;padding:10px;border-radius:10px;border:1px solid ${configTab==='connect'?'var(--accent)':'var(--glass-border)'};background:${configTab==='connect'?'var(--accent-soft)':'transparent'};color:${configTab==='connect'?'var(--accent)':'var(--text-dim)'};font-size:12px;font-weight:600;cursor:pointer">Connect</button>`;
-        html += `<button onclick="configTab='settings';renderConfig()" style="flex:1;padding:10px;border-radius:10px;border:1px solid ${configTab==='settings'?'var(--accent)':'var(--glass-border)'};background:${configTab==='settings'?'var(--accent-soft)':'transparent'};color:${configTab==='settings'?'var(--accent)':'var(--text-dim)'};font-size:12px;font-weight:600;cursor:pointer">${t('settings')}</button>`;
+        html += `<div style="display:flex;gap:4px;margin-bottom:12px;overflow-x:auto">`;
+        html += `<button onclick="configTab='actions';renderConfig()" style="flex:1;padding:10px;border-radius:10px;border:1px solid ${configTab==='actions'?'var(--accent)':'var(--glass-border)'};background:${configTab==='actions'?'var(--accent-soft)':'transparent'};color:${configTab==='actions'?'var(--accent)':'var(--text-dim)'};font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap">${t('actions')}</button>`;
+        html += `<button onclick="configTab='plugins';renderConfig()" style="flex:1;padding:10px;border-radius:10px;border:1px solid ${configTab==='plugins'?'var(--accent)':'var(--glass-border)'};background:${configTab==='plugins'?'var(--accent-soft)':'transparent'};color:${configTab==='plugins'?'var(--accent)':'var(--text-dim)'};font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap">Plugins</button>`;
+        html += `<button onclick="configTab='connect';renderConfig()" style="flex:1;padding:10px;border-radius:10px;border:1px solid ${configTab==='connect'?'var(--accent)':'var(--glass-border)'};background:${configTab==='connect'?'var(--accent-soft)':'transparent'};color:${configTab==='connect'?'var(--accent)':'var(--text-dim)'};font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap">Connect</button>`;
+        html += `<button onclick="configTab='settings';renderConfig()" style="flex:1;padding:10px;border-radius:10px;border:1px solid ${configTab==='settings'?'var(--accent)':'var(--glass-border)'};background:${configTab==='settings'?'var(--accent-soft)':'transparent'};color:${configTab==='settings'?'var(--accent)':'var(--text-dim)'};font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap">${t('settings')}</button>`;
         html += `</div>`;
 
         if (configTab === 'actions') {
@@ -614,6 +615,8 @@
             const iconHtml = a.icon && a.icon.startsWith('http') ? `<img src="${a.icon}" style="width:20px;height:20px;border-radius:4px">` : `<i data-lucide="${{url:'globe',copy:'clipboard',command:'terminal'}[a.type]||'zap'}" style="width:18px;height:18px;color:var(--accent)"></i>`;
             return `<div class="config-item">${iconHtml}<div class="info"><p>${a.label}</p><small>${a.type}</small></div><button class="del" onclick="del('${a.id}')">×</button></div>`;
           }).join('');
+        } else if (configTab === 'plugins') {
+          html += `<div id="plugin-store" style="font-size:12px;color:var(--text-dim)">Loading...</div>`;
         } else if (configTab === 'connect') {
           html += `<div style="text-align:center;padding:20px 0"><p style="font-size:13px;color:var(--text-dim);margin-bottom:16px">${lang==='es'?'Escanea con tu tablet o teléfono':'Scan with your tablet or phone'}</p><img src="/qr" style="width:200px;height:200px;margin:0 auto;display:block;border-radius:12px"><p id="qr-url" style="margin-top:12px;font-size:13px;color:var(--accent);font-family:monospace"></p></div>`;
         } else {
@@ -632,6 +635,8 @@
           const el = document.getElementById('qr-url');
           if (el && d.url) el.textContent = d.url;
         }).catch(()=>{});
+      }
+      if (configTab === 'plugins') { loadPluginStore(); }
       }
     }
 
@@ -657,6 +662,22 @@
     }
 
     function setLang(l) { lang = l; localStorage.setItem('deck-lang', l); renderConfig(); renderGrid(); renderNotifs(); }
+
+    function loadPluginStore() {
+      const el = document.getElementById('plugin-store');
+      if (!el) return;
+      fetch('/plugins/store').then(r => r.json()).then(data => {
+        if (!data.plugins || !data.plugins.length) { el.innerHTML = '<p style="text-align:center;padding:20px;color:var(--text-dim)">No plugins available</p>'; return; }
+        el.innerHTML = data.plugins.map(p => `<div class="config-item" style="margin-bottom:8px"><div class="info" style="flex:1"><p style="font-size:13px;font-weight:500">${p.name}</p><small style="color:var(--text-dim)">${p.description}</small></div><button onclick="installPlugin('${p.id}','${p.url}')" style="padding:6px 12px;border-radius:8px;border:1px solid ${p.installed?'var(--green)':'var(--accent)'};background:${p.installed?'transparent':'var(--accent-soft)'};color:${p.installed?'var(--green)':'var(--accent)'};font-size:11px;font-weight:600;cursor:pointer">${p.installed?'✓ Installed':'Install'}</button></div>`).join('');
+      }).catch(() => { el.innerHTML = '<p style="color:var(--text-dim)">Could not load store</p>'; });
+    }
+
+    function installPlugin(id, url) {
+      fetch('/plugins/install', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({id, url}) })
+        .then(r => r.json())
+        .then(d => { if (d.ok) { addNotif(lang==='es'?'Plugin instalado. Reinicia para activar.':'Plugin installed. Restart to activate.', 'success'); loadPluginStore(); } else { addNotif(d.error || 'Error', 'error'); } })
+        .catch(() => addNotif('Install failed', 'error'));
+    }
 
     const CURRENT_VERSION = '0.2.0';
     const REPO = 'florextech/deck';
