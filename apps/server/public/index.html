@@ -107,9 +107,14 @@
     .notif-empty { color:var(--text-dim); font-size:11px; }
 
     /* Grid */
-    #grid { position:relative; z-index:1; flex:1; overflow-y:auto; padding:12px; display:grid; grid-template-columns:repeat(3,1fr); grid-auto-rows:1fr; gap:10px; }
-    @media(min-width:600px){#grid{grid-template-columns:repeat(4,1fr);}}
-    @media(min-width:900px){#grid{grid-template-columns:repeat(5,1fr);}}
+    #grid-wrapper { position:relative; z-index:1; flex:1; overflow:hidden; }
+    #grid-pages { display:flex; height:100%; transition:transform 0.3s ease; touch-action:pan-y; }
+    .grid-page { min-width:100%; padding:12px; display:grid; grid-template-columns:repeat(3,1fr); grid-auto-rows:1fr; gap:10px; overflow-y:auto; align-content:start; }
+    @media(min-width:600px){.grid-page{grid-template-columns:repeat(4,1fr);}}
+    @media(min-width:900px){.grid-page{grid-template-columns:repeat(5,1fr);}}
+    #page-dots { display:flex; justify-content:center; gap:6px; padding:6px 0; position:relative; z-index:1; }
+    #page-dots span { width:6px; height:6px; border-radius:50%; background:var(--glass-border); transition:background 0.2s; }
+    #page-dots span.active { background:var(--accent); }
     .tile { background:var(--glass); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); border:1px solid var(--glass-border); border-radius:14px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; padding:10px 6px; cursor:pointer; transition:transform .12s,background .2s,border-color .2s,box-shadow .2s; min-height:80px; }
     .tile:active { transform:scale(0.88); background:var(--glass-strong); border-color:var(--glass-border-active); box-shadow:0 0 24px var(--glass-glow); }
     .tile .tile-icon { width:32px; height:32px; display:flex; align-items:center; justify-content:center; flex-shrink:0; color:var(--accent); }
@@ -221,7 +226,8 @@
 </head>
 <body>
   <div id="status-bar"><div class="notif-line"><span class="notif-empty">waiting for notifications...</span></div></div>
-  <div id="grid"></div>
+  <div id="grid-wrapper"><div id="grid-pages"></div></div>
+  <div id="page-dots"></div>
   <div id="config"></div>
   <div id="form">
     <button class="back-btn" onclick="showConfig()">← Back</button>
@@ -241,6 +247,7 @@
         <button class="modal-option" data-type="url"><div class="iw"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></div><div><div class="label">Open a link</div><div class="desc">Website, URL</div></div></button>
         <button class="modal-option" data-type="copy"><div class="iw"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></div><div><div class="label">Copy text</div><div class="desc">Copy to PC clipboard</div></div></button>
         <button class="modal-option" data-type="command"><div class="iw"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg></div><div><div class="label">Run command</div><div class="desc">Execute on PC</div></div></button>
+        <button class="modal-option" data-type="shortcut"><div class="iw"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M6 8h.01M10 8h.01M14 8h.01M18 8h.01M8 12h8"/></svg></div><div><div class="label">Keyboard shortcut</div><div class="desc">Cmd+Tab, Ctrl+C, etc.</div></div></button>
         <button class="modal-option" data-type="apps"><div class="iw"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></div><div><div class="label">Open app</div><div class="desc">From installed apps</div></div></button>
       </div>
       <div id="modal-step2" style="display:none">
@@ -468,7 +475,7 @@
     // Tile icon: custom image URL only if set, otherwise Lucide
     function getTileIcon(a) {
       if (a.icon && a.icon.startsWith('http')) return `<div class="tile-icon"><img src="${a.icon}" alt="" onerror="this.style.display='none'"></div>`;
-      const lucideMap = { url: 'globe', copy: 'clipboard', command: 'terminal' };
+      const lucideMap = { url: 'globe', copy: 'clipboard', command: 'terminal', shortcut: 'keyboard', macro: 'layers' };
       return `<div class="tile-icon"><i data-lucide="${lucideMap[a.type] || 'zap'}"></i></div>`;
     }
 
@@ -480,29 +487,46 @@
       return ['all', ...cats];
     }
 
-    function renderGrid() {
-      const el = document.getElementById('grid');
-      if (!actions.length) { el.innerHTML = `<div class="empty">${t('noActions')}<br>${t('tapConfig')}</div>`; return; }
+    let currentPage = 0;
+    const ITEMS_PER_PAGE = 12;
 
-      const cats = getCategories();
+    function renderGrid() {
+      const container = document.getElementById('grid-pages');
+      const dotsEl = document.getElementById('page-dots');
       const filtered = activeCategory === 'all' ? actions : actions.filter(a => (a.category || 'General') === activeCategory);
 
-      let html = '';
-      if (cats.length > 2) {
-        html += `<div class="cat-tabs" style="grid-column:1/-1">`;
-        html += cats.map(c => `<button class="cat-tab ${activeCategory===c?'active':''}" onclick="setCategory('${c}')">${c === 'all' ? t('all') : c}</button>`).join('');
-        html += `</div>`;
-      }
-      html += filtered.map(a => `<div class="tile" data-action-id="${a.id}" draggable="${isHost}" ondragstart="dragStart(event,'${a.id}')" ondragover="dragOver(event)" ondrop="drop(event,'${a.id}')" ondragend="dragEnd(event)">${getTileIcon(a)}<span>${a.label}</span>${a.confirm?'<div style="position:absolute;top:6px;right:6px;width:6px;height:6px;border-radius:50%;background:var(--red)"></div>':''}</div>`).join('');
+      if (!filtered.length) { container.innerHTML = `<div class="grid-page"><div class="empty">${t('noActions')}<br>${t('tapConfig')}</div></div>`; dotsEl.innerHTML = ''; return; }
 
-      el.innerHTML = html;
+      // Split into pages
+      const pages = [];
+      for (let i = 0; i < filtered.length; i += ITEMS_PER_PAGE) pages.push(filtered.slice(i, i + ITEMS_PER_PAGE));
+      if (currentPage >= pages.length) currentPage = pages.length - 1;
+
+      container.innerHTML = pages.map(page =>
+        `<div class="grid-page">${page.map(a => `<div class="tile" data-action-id="${a.id}" draggable="${isHost}">${getTileIcon(a)}<span>${a.label}</span>${a.confirm?'<div style="position:absolute;top:6px;right:6px;width:6px;height:6px;border-radius:50%;background:var(--red)"></div>':''}</div>`).join('')}</div>`
+      ).join('');
+
+      // Dots
+      dotsEl.innerHTML = pages.length > 1 ? pages.map((_, i) => `<span class="${i===currentPage?'active':''}"></span>`).join('') : '';
+
+      container.style.transform = `translateX(-${currentPage * 100}%)`;
       lucide.createIcons();
     }
+
+    // Swipe
+    let touchStartX = 0;
+    document.getElementById('grid-pages').addEventListener('touchstart', (e) => { touchStartX = e.touches[0].clientX; });
+    document.getElementById('grid-pages').addEventListener('touchend', (e) => {
+      const diff = touchStartX - e.changedTouches[0].clientX;
+      const pages = Math.ceil((activeCategory === 'all' ? actions : actions.filter(a => (a.category || 'General') === activeCategory)).length / ITEMS_PER_PAGE);
+      if (diff > 50 && currentPage < pages - 1) { currentPage++; renderGrid(); }
+      else if (diff < -50 && currentPage > 0) { currentPage--; renderGrid(); }
+    });
 
     function setCategory(cat) { activeCategory = cat; renderGrid(); }
 
     // Event delegation for tile clicks
-    document.getElementById('grid').addEventListener('click', (e) => {
+    document.getElementById('grid-pages').addEventListener('click', (e) => {
       const tile = e.target.closest('[data-action-id]');
       if (tile) exec(tile.dataset.actionId);
     });
@@ -531,9 +555,17 @@
       pendingConfirmId = null;
     }
 
+    let history = JSON.parse(localStorage.getItem('deck-history') || '[]');
+
     function doExec(id) {
       if (!socket || !socket.connected) { addNotif(lang==='es'?'No conectado al servidor':'Not connected to server', 'error'); return; }
+      // Haptic
+      if (navigator.vibrate) navigator.vibrate(30);
       socket.emit('action:execute', id);
+      // History
+      const action = actions.find(a => a.id === id);
+      if (action) { history.unshift({ label: action.label, type: action.type, time: Date.now() }); if (history.length > 50) history.pop(); localStorage.setItem('deck-history', JSON.stringify(history)); }
+      // Flash
       const tile = document.querySelector(`[data-action-id="${id}"]`);
       if (tile) { tile.classList.add('flash-ok'); setTimeout(() => tile.classList.remove('flash-ok'), 600); }
     }
@@ -696,8 +728,8 @@
     function del(id) { actions = actions.filter(a => a.id !== id); save(); }
     function save() { fetch(activeWorkspace + '/config', { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify({actions}) }); renderGrid(); renderConfig(); }
 
-    function showDeck() { document.getElementById('grid').classList.remove('hidden'); document.getElementById('config').classList.remove('active'); document.getElementById('nav-deck').classList.add('active'); document.getElementById('nav-config').classList.remove('active'); }
-    function showConfig() { document.getElementById('grid').classList.add('hidden'); document.getElementById('config').classList.add('active'); document.getElementById('nav-deck').classList.remove('active'); document.getElementById('nav-config').classList.add('active'); renderConfig(); }
+    function showDeck() { document.getElementById('grid-wrapper').style.display=''; document.getElementById('page-dots').style.display=''; document.getElementById('config').classList.remove('active'); document.getElementById('nav-deck').classList.add('active'); document.getElementById('nav-config').classList.remove('active'); }
+    function showConfig() { document.getElementById('grid-wrapper').style.display='none'; document.getElementById('page-dots').style.display='none'; document.getElementById('config').classList.add('active'); document.getElementById('nav-deck').classList.remove('active'); document.getElementById('nav-config').classList.add('active'); renderConfig(); }
 
     function openModal() { document.getElementById('modal').classList.add('active'); document.getElementById('modal-step1').style.display=''; document.getElementById('modal-step2').style.display='none'; document.getElementById('modal-step-apps').style.display='none'; document.getElementById('modal-title').textContent=t('addActionTitle'); document.getElementById('back-btn-form').textContent=t('back'); document.getElementById('back-btn-apps').textContent=t('back'); }
     function closeModal() { document.getElementById('modal').classList.remove('active'); }
@@ -713,8 +745,8 @@
           loadApps();
           return;
         }
-        const titles = {url:t('addLink'),copy:t('addCopy'),command:t('addCommand')};
-        const ph = {url:'https://...',copy:t('copyText'),command:'docker restart...'};
+        const titles = {url:t('addLink'),copy:t('addCopy'),command:t('addCommand'),shortcut:'Shortcut'};
+        const ph = {url:'https://...',copy:t('copyText'),command:'docker restart...',shortcut:'cmd+shift+a'};
         document.getElementById('modal-title').textContent = titles[currentType] || '';
         document.getElementById('mf-value').placeholder = ph[currentType] || '';
         document.getElementById('mf-label').placeholder = t('buttonName');
@@ -763,7 +795,7 @@
       const category = document.getElementById('mf-category').value || undefined;
       const confirm = document.getElementById('mf-confirm').checked || undefined;
       const value = document.getElementById('mf-value').value;
-      const payload = currentType==='url'?{type:'url',url:value}:currentType==='copy'?{type:'copy',text:value}:{type:'command',command:value};
+      const payload = currentType==='url'?{type:'url',url:value}:currentType==='copy'?{type:'copy',text:value}:currentType==='shortcut'?{type:'shortcut',keys:value}:{type:'command',command:value};
       actions.push({ id: crypto.randomUUID(), label, icon, category, confirm, type: currentType, payload });
       save();
       document.getElementById('mf-label').value = '';

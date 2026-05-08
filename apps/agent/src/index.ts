@@ -25,6 +25,7 @@ socket.on("action:run" as string, (action: DeckAction) => {
     case "url": openUrl(action.payload.url); break;
     case "copy": copyToClipboard(action.payload.text); break;
     case "command": runCommand(action.payload.command); break;
+    case "shortcut": runShortcut(action.payload.keys); break;
   }
 });
 
@@ -57,6 +58,33 @@ function runCommand(command: string) {
   exec(command, { shell: os === "win32" ? "cmd.exe" : "/bin/bash", timeout: 30000 }, (err, stdout) => {
     if (err) notify(`❌ ${command.slice(0, 30)}...`, "error");
     else notify(`✓ ${command.slice(0, 30)}${stdout ? " → " + stdout.trim().slice(0, 20) : ""}`, "success");
+  });
+}
+
+function runShortcut(keys: string) {
+  // keys format: "cmd+shift+a" or "ctrl+alt+t"
+  let cmd: string;
+  if (os === "darwin") {
+    // Use osascript to simulate key press
+    const keyMap: Record<string, string> = { cmd: "command down", shift: "shift down", alt: "option down", ctrl: "control down" };
+    const parts = keys.toLowerCase().split("+");
+    const key = parts.pop() ?? "";
+    const modifiers = parts.map(m => keyMap[m] || `${m} down`).join(", ");
+    cmd = `osascript -e 'tell application "System Events" to keystroke "${key}" using {${modifiers}}'`;
+  } else if (os === "win32") {
+    // Use PowerShell SendKeys
+    const keyMap: Record<string, string> = { ctrl: "^", alt: "%", shift: "+" };
+    const parts = keys.toLowerCase().split("+");
+    const key = parts.pop() ?? "";
+    const mods = parts.map(m => keyMap[m] || "").join("");
+    cmd = `powershell -Command "[System.Windows.Forms.SendKeys]::SendWait('${mods}${key}')"`;
+  } else {
+    // xdotool on Linux
+    cmd = `xdotool key ${keys.replace(/\+/g, "+")}`;
+  }
+  exec(cmd, (err) => {
+    if (err) notify(`❌ Shortcut failed`, "error");
+    else notify(`⌨️ ${keys}`, "success");
   });
 }
 

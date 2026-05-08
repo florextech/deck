@@ -1,7 +1,7 @@
 import express from "express";
 import { createServer } from "node:http";
 import { Server } from "socket.io";
-import { readFileSync, writeFileSync, watchFile } from "node:fs";
+import { readFileSync, writeFileSync, watchFile, readdirSync, existsSync } from "node:fs";
 import { resolve, join } from "node:path";
 import { networkInterfaces } from "node:os";
 import cors from "cors";
@@ -68,6 +68,20 @@ io.on("connection", (socket) => {
     if (!action) return;
 
     console.log(`[deck] Execute: ${action.label} (${action.type})`);
+
+    // Macro: execute steps in sequence
+    if (action.payload.type === "macro") {
+      const steps = action.payload.steps;
+      steps.forEach((step, i) => {
+        setTimeout(() => {
+          const stepAction = actions.find((a) => a.id === step.actionId);
+          if (stepAction && agentSocket) {
+            io.to(agentSocket).emit("action:run" as keyof ServerToClientEvents, stepAction as never);
+          }
+        }, (step.delay ?? 0) + i * 200);
+      });
+      return;
+    }
 
     if (agentSocket) {
       io.to(agentSocket).emit("action:run" as keyof ServerToClientEvents, action as never);
@@ -137,9 +151,49 @@ app.post("/notify", (req, res) => {
   res.json({ ok: true });
 });
 
+// Plugin system
+const widgets: Record<string, { interval: number; getData: () => unknown }> = {};
+const customActions: Record<string, (payload: unknown) => void> = {};
+
+function loadPlugins() {
+  const pluginsDir = resolve(CONFIG_PATH, "../plugins");
+  if (!existsSync(pluginsDir)) return;
+  const deck = {
+    registerAction: (type: string, handler: (payload: unknown) => void) => { customActions[type] = handler; },
+    registerWidget: (id: string, config: { interval: number; getData: () => unknown }) => { widgets[id] = config; startWidget(id, config); },
+    notify: (title: string, level: string) => { io.emit("notification:new", { id: crypto.randomUUID(), title, level: level as "info", timestamp: Date.now(), read: false }); },
+    getActions: () => actions,
+    onExecute: (_cb: unknown) => {},
+  };
+  try {
+    const files = readdirSync(pluginsDir).filter(f => f.endsWith(".js"));
+    for (const file of files) {
+      try {
+        const plugin = require(resolve(pluginsDir, file));
+        plugin.setup(deck);
+        console.log(`[deck] Plugin loaded: ${plugin.name}`);
+      } catch (e) { console.log(`[deck] Plugin error (${file}):`, (e as Error).message); }
+    }
+  } catch { /* no plugins dir */ }
+}
+
+function startWidget(id: string, config: { interval: number; getData: () => unknown }) {
+  setInterval(() => {
+    const data = config.getData();
+    io.emit("widget:update" as keyof ServerToClientEvents, { id, data } as never);
+  }, config.interval);
+}
+
+app.get("/widgets", (_req, res) => {
+  const data: Record<string, unknown> = {};
+  for (const [id, w] of Object.entries(widgets)) { data[id] = w.getData(); }
+  res.json(data);
+});
+
 httpServer.listen(PORT, "0.0.0.0", () => {
   console.log(`[deck] Server on http://localhost:${PORT}`);
   console.log(`[deck] Config: ${CONFIG_PATH} (${actions.length} actions)`);
+  loadPlugins();
 });
 
 httpServer.on("error", (err: NodeJS.ErrnoException) => {
