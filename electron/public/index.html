@@ -238,12 +238,12 @@
       </div>
       <div id="modal-step2" style="display:none">
         <form id="modal-form">
-          <input id="mf-label" placeholder="Button name" required>
+          <input id="mf-label" placeholder="" required>
           <input id="mf-value" required>
-          <input id="mf-icon" placeholder="Custom icon URL (optional)">
-          <input id="mf-category" placeholder="Category (optional, e.g. Dev, Media)">
-          <label style="display:flex;align-items:center;gap:8px;padding:8px 0;font-size:12px;color:var(--text-dim);cursor:pointer"><input type="checkbox" id="mf-confirm" style="width:16px;height:16px;accent-color:var(--accent)"> Require confirmation</label>
-          <button type="submit" class="submit-btn">Add to deck</button>
+          <input id="mf-icon" placeholder="">
+          <input id="mf-category" placeholder="">
+          <label style="display:flex;align-items:center;gap:8px;padding:8px 0;font-size:12px;color:var(--text-dim);cursor:pointer"><input type="checkbox" id="mf-confirm" style="width:16px;height:16px;accent-color:var(--accent)"> <span id="mf-confirm-label"></span></label>
+          <button type="submit" class="submit-btn" id="mf-submit-btn"></button>
         </form>
         <button class="modal-back" onclick="modalBack()">← Back</button>
       </div>
@@ -255,10 +255,10 @@
   </div>
   <div id="confirm-dialog">
     <div id="confirm-box">
-      <p id="confirm-msg">Are you sure?</p>
+      <p id="confirm-msg"></p>
       <div class="btns">
-        <button class="btn-no" onclick="cancelConfirm()">Cancel</button>
-        <button class="btn-yes" onclick="doConfirm()">Execute</button>
+        <button class="btn-no" onclick="cancelConfirm()" id="confirm-cancel-btn">Cancel</button>
+        <button class="btn-yes" onclick="doConfirm()" id="confirm-exec-btn">Execute</button>
       </div>
     </div>
   </div>
@@ -315,6 +315,11 @@
         scanning: 'Scanning...',
         noNewPcs: 'No new PCs found',
         foundAt: 'Found Deck at',
+        category: 'Category (optional, e.g. Dev, Media)',
+        requireConfirm: 'Require confirmation',
+        confirmExec: 'Execute',
+        confirmCancel: 'Cancel',
+        all: 'All',
       },
       es: {
         waiting: 'esperando notificaciones...',
@@ -359,6 +364,11 @@
         scanning: 'Buscando...',
         noNewPcs: 'No se encontraron PCs',
         foundAt: 'Deck encontrado en',
+        category: 'Categoría (opcional, ej. Dev, Media)',
+        requireConfirm: 'Requiere confirmación',
+        confirmExec: 'Ejecutar',
+        confirmCancel: 'Cancelar',
+        all: 'Todos',
       }
     };
     let lang = localStorage.getItem('deck-lang') || (navigator.language.startsWith('es') ? 'es' : 'en');
@@ -471,7 +481,7 @@
       let html = '';
       if (cats.length > 2) {
         html += `<div class="cat-tabs" style="grid-column:1/-1">`;
-        html += cats.map(c => `<button class="cat-tab ${activeCategory===c?'active':''}" onclick="setCategory('${c}')">${c === 'all' ? (lang==='es'?'Todos':'All') : c}</button>`).join('');
+        html += cats.map(c => `<button class="cat-tab ${activeCategory===c?'active':''}" onclick="setCategory('${c}')">${c === 'all' ? t('all') : c}</button>`).join('');
         html += `</div>`;
       }
       html += filtered.map(a => `<div class="tile" id="tile-${a.id}" onclick="exec('${a.id}')" draggable="${isHost}" ondragstart="dragStart(event,'${a.id}')" ondragover="dragOver(event)" ondrop="drop(event,'${a.id}')" ondragend="dragEnd(event)">${getTileIcon(a)}<span>${a.label}</span>${a.confirm?'<div style="position:absolute;top:6px;right:6px;width:6px;height:6px;border-radius:50%;background:var(--red)"></div>':''}</div>`).join('');
@@ -487,7 +497,9 @@
       if (!action) return;
       if (action.confirm) {
         pendingConfirmId = id;
-        document.getElementById('confirm-msg').textContent = `${lang==='es'?'¿Ejecutar':'Execute'} "${action.label}"?`;
+        document.getElementById('confirm-msg').textContent = `${t('confirmExec')} "${action.label}"?`;
+        document.getElementById('confirm-cancel-btn').textContent = t('confirmCancel');
+        document.getElementById('confirm-exec-btn').textContent = t('confirmExec');
         document.getElementById('confirm-dialog').classList.add('active');
         return;
       }
@@ -643,16 +655,21 @@
       opt.onclick = () => {
         currentType = opt.dataset.type;
         if (currentType === 'apps') {
-          document.getElementById('modal-title').textContent = 'Select app';
+          document.getElementById('modal-title').textContent = t('selectApp');
           document.getElementById('modal-step1').style.display='none';
           document.getElementById('modal-step-apps').style.display='';
           loadApps();
           return;
         }
-        const titles = {url:'Add link',copy:'Add copy action',command:'Add command'};
-        const ph = {url:'https://...',copy:'Text to copy',command:'command to run'};
-        document.getElementById('modal-title').textContent = titles[currentType] || 'Add';
+        const titles = {url:t('addLink'),copy:t('addCopy'),command:t('addCommand')};
+        const ph = {url:'https://...',copy:t('copyText'),command:'docker restart...'};
+        document.getElementById('modal-title').textContent = titles[currentType] || '';
         document.getElementById('mf-value').placeholder = ph[currentType] || '';
+        document.getElementById('mf-label').placeholder = t('buttonName');
+        document.getElementById('mf-icon').placeholder = t('customIcon');
+        document.getElementById('mf-category').placeholder = t('category');
+        document.getElementById('mf-confirm-label').textContent = t('requireConfirm');
+        document.getElementById('mf-submit-btn').textContent = t('addToDeck');
         document.getElementById('modal-step1').style.display='none';
         document.getElementById('modal-step2').style.display='';
       };
