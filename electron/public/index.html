@@ -639,11 +639,11 @@
 
       if (isHost) {
         // Host: tabs Actions / Connect / Settings
-        html += `<div style="display:flex;gap:4px;margin-bottom:12px;overflow-x:auto">`;
-        html += `<button onclick="configTab='actions';renderConfig()" style="flex:1;padding:10px;border-radius:10px;border:1px solid ${configTab==='actions'?'var(--accent)':'var(--glass-border)'};background:${configTab==='actions'?'var(--accent-soft)':'transparent'};color:${configTab==='actions'?'var(--accent)':'var(--text-dim)'};font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap">${t('actions')}</button>`;
-        html += `<button onclick="configTab='plugins';renderConfig()" style="flex:1;padding:10px;border-radius:10px;border:1px solid ${configTab==='plugins'?'var(--accent)':'var(--glass-border)'};background:${configTab==='plugins'?'var(--accent-soft)':'transparent'};color:${configTab==='plugins'?'var(--accent)':'var(--text-dim)'};font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap">Plugins</button>`;
-        html += `<button onclick="configTab='connect';renderConfig()" style="flex:1;padding:10px;border-radius:10px;border:1px solid ${configTab==='connect'?'var(--accent)':'var(--glass-border)'};background:${configTab==='connect'?'var(--accent-soft)':'transparent'};color:${configTab==='connect'?'var(--accent)':'var(--text-dim)'};font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap">${lang==='es'?'Conectar':'Connect'}</button>`;
-        html += `<button onclick="configTab='settings';renderConfig()" style="flex:1;padding:10px;border-radius:10px;border:1px solid ${configTab==='settings'?'var(--accent)':'var(--glass-border)'};background:${configTab==='settings'?'var(--accent-soft)':'transparent'};color:${configTab==='settings'?'var(--accent)':'var(--text-dim)'};font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap">${t('settings')}</button>`;
+        html += `<div style="display:flex;gap:4px;margin-bottom:12px;overflow-x:auto" id="config-tabs">`;
+        html += `<button data-tab="actions" style="flex:1;padding:10px;border-radius:10px;border:1px solid ${configTab==='actions'?'var(--accent)':'var(--glass-border)'};background:${configTab==='actions'?'var(--accent-soft)':'transparent'};color:${configTab==='actions'?'var(--accent)':'var(--text-dim)'};font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap">${t('actions')}</button>`;
+        html += `<button data-tab="plugins" style="flex:1;padding:10px;border-radius:10px;border:1px solid ${configTab==='plugins'?'var(--accent)':'var(--glass-border)'};background:${configTab==='plugins'?'var(--accent-soft)':'transparent'};color:${configTab==='plugins'?'var(--accent)':'var(--text-dim)'};font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap">Plugins</button>`;
+        html += `<button data-tab="connect" style="flex:1;padding:10px;border-radius:10px;border:1px solid ${configTab==='connect'?'var(--accent)':'var(--glass-border)'};background:${configTab==='connect'?'var(--accent-soft)':'transparent'};color:${configTab==='connect'?'var(--accent)':'var(--text-dim)'};font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap">${lang==='es'?'Conectar':'Connect'}</button>`;
+        html += `<button data-tab="settings" style="flex:1;padding:10px;border-radius:10px;border:1px solid ${configTab==='settings'?'var(--accent)':'var(--glass-border)'};background:${configTab==='settings'?'var(--accent-soft)':'transparent'};color:${configTab==='settings'?'var(--accent)':'var(--text-dim)'};font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap">${t('settings')}</button>`;
         html += `</div>`;
 
         if (configTab === 'actions') {
@@ -666,14 +666,17 @@
       }
 
       el.innerHTML = html;
-      lucide.createIcons();
+      try { lucide.createIcons(); } catch {}
+      // Tab click delegation
+      const tabs = document.getElementById('config-tabs');
+      if (tabs) tabs.onclick = (e) => { const btn = e.target.closest('[data-tab]'); if (btn) { configTab = btn.dataset.tab; renderConfig(); } };
       if (configTab === 'connect' && isHost) {
         fetch('/health').then(r=>r.json()).then(d => {
           const el = document.getElementById('qr-url');
           if (el && d.url) el.textContent = d.url;
         }).catch(()=>{});
       }
-      if (configTab === 'plugins') { loadPluginStore(); }
+      if (configTab === 'plugins') { try { loadPluginStore(); } catch {} }
     }
 
     function renderSettings() {
