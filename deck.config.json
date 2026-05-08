@@ -1,14 +1,112 @@
 {
   "actions": [
-    { "id": "1", "label": "GitHub", "type": "url", "payload": { "type": "url", "url": "https://github.com" } },
-    { "id": "2", "label": "Copy SSH Key", "type": "copy", "payload": { "type": "copy", "text": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI..." } },
-    { "id": "3", "label": "Restart Docker", "type": "command", "payload": { "type": "command", "command": "docker compose restart" } },
-    { "id": "4", "label": "Deploy", "type": "command", "payload": { "type": "command", "command": "cd ~/projects/myapp && pnpm deploy" } },
-    { "id": "5", "label": "Figma", "type": "url", "payload": { "type": "url", "url": "https://figma.com" } },
-    { "id": "6", "label": "Run Tests", "type": "command", "payload": { "type": "command", "command": "cd ~/projects/myapp && pnpm test" } },
-    { "id": "7", "label": "VS Code", "type": "command", "payload": { "type": "command", "command": "code ~/projects/myapp" } },
-    { "id": "8", "label": "Kill Port 3000", "type": "command", "payload": { "type": "command", "command": "lsof -ti:3000 | xargs kill -9" } },
-    { "id": "9", "label": "Slack", "type": "url", "payload": { "type": "url", "url": "https://slack.com" } },
-    { "id": "10", "label": "Notion", "type": "url", "payload": { "type": "url", "url": "https://notion.so" } }
+    {
+      "id": "1",
+      "label": "GitHub",
+      "type": "url",
+      "payload": {
+        "type": "url",
+        "url": "https://github.com"
+      }
+    },
+    {
+      "id": "2",
+      "label": "Copy SSH Key",
+      "type": "copy",
+      "payload": {
+        "type": "copy",
+        "text": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI..."
+      }
+    },
+    {
+      "id": "3",
+      "label": "Restart Docker",
+      "type": "command",
+      "payload": {
+        "type": "command",
+        "command": "docker compose restart"
+      }
+    },
+    {
+      "id": "4",
+      "label": "Deploy",
+      "type": "command",
+      "payload": {
+        "type": "command",
+        "command": "cd ~/projects/myapp && pnpm deploy"
+      }
+    },
+    {
+      "id": "5",
+      "label": "Figma",
+      "type": "url",
+      "payload": {
+        "type": "url",
+        "url": "https://figma.com"
+      }
+    },
+    {
+      "id": "6",
+      "label": "Run Tests",
+      "type": "command",
+      "payload": {
+        "type": "command",
+        "command": "cd ~/projects/myapp && pnpm test"
+      }
+    },
+    {
+      "id": "7",
+      "label": "VS Code",
+      "type": "command",
+      "payload": {
+        "type": "command",
+        "command": "code ~/projects/myapp"
+      }
+    },
+    {
+      "id": "8",
+      "label": "Kill Port 3000",
+      "type": "command",
+      "payload": {
+        "type": "command",
+        "command": "lsof -ti:3000 | xargs kill -9"
+      }
+    },
+    {
+      "id": "9",
+      "label": "Slack",
+      "type": "url",
+      "payload": {
+        "type": "url",
+        "url": "https://slack.com"
+      }
+    },
+    {
+      "id": "10",
+      "label": "Notion",
+      "type": "url",
+      "payload": {
+        "type": "url",
+        "url": "https://notion.so"
+      }
+    },
+    {
+      "id": "c927971a-a2df-4f23-9aca-e5ebe6547f69",
+      "label": "Calendar",
+      "type": "command",
+      "payload": {
+        "type": "command",
+        "command": "open -a \"Calendar\""
+      }
+    },
+    {
+      "id": "ee530e7d-61cd-4127-9ff7-320a6dd6f60c",
+      "label": "Font Book",
+      "type": "command",
+      "payload": {
+        "type": "command",
+        "command": "open -a \"Font Book\""
+      }
+    }
   ]
 }

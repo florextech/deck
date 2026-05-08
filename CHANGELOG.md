@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.0] - 2026-05-07
+
+### Added
+- Event delegation for all click handlers (more robust)
+- Pinned Lucide CDN version for stability
+
+### Fixed
+- App picker crashes with special characters in app names
+- Inline onerror causing SyntaxError
+- Extra closing brace breaking JS
+- Deprecated meta tag warning
+- VS Code icon 404
+- Electron: merged server+agent into single process (reliable execution)
+- Electron: retry page load if server not ready
+
 ## [0.2.1] - 2026-05-07
 
 ### Added
