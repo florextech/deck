@@ -155,7 +155,7 @@ app.post("/notify", (req, res) => {
 const widgets: Record<string, { interval: number; getData: () => unknown }> = {};
 const customActions: Record<string, (payload: unknown) => void> = {};
 
-function loadPlugins() {
+async function loadPlugins() {
   const pluginsDir = resolve(CONFIG_PATH, "../plugins");
   if (!existsSync(pluginsDir)) return;
   const deck = {
@@ -170,7 +170,9 @@ function loadPlugins() {
     for (const file of files) {
       try {
         // eslint-disable-next-line @typescript-eslint/no-require-imports
-        const plugin = require(resolve(pluginsDir, file));
+        const { createRequire } = await import("node:module");
+        const req = createRequire(import.meta.url);
+        const plugin = req(resolve(pluginsDir, file));
         plugin.setup(deck);
         console.log(`[deck] Plugin loaded: ${plugin.name}`);
       } catch (e) { console.log(`[deck] Plugin error (${file}):`, (e as Error).message); }
