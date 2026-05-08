@@ -1,13 +1,11 @@
 const { app, BrowserWindow, Tray, Menu, shell } = require("electron");
-const { fork } = require("child_process");
 const { networkInterfaces } = require("os");
 const path = require("path");
+const fs = require("fs");
 
 const PORT = 4000;
-let tray = null;
-let serverProcess = null;
-let agentProcess = null;
 let win = null;
+let tray = null;
 
 function getLocalIP() {
   const nets = networkInterfaces();
@@ -19,87 +17,64 @@ function getLocalIP() {
   return "localhost";
 }
 
-function getResourcePath(file) {
-  // In packaged app, files are in app.asar or resources
-  if (app.isPackaged) {
-    return path.join(process.resourcesPath, "app.asar", file);
-  }
-  return path.join(__dirname, file);
-}
-
 app.whenReady().then(() => {
-  const serverPath = getResourcePath("server.js");
-  const agentPath = getResourcePath("agent.js");
-  const configPath = app.isPackaged
-    ? path.join(app.getPath("userData"), "deck.config.json")
-    : path.join(__dirname, "deck.config.json");
-
-  // Copy default config if not exists
-  const fs = require("fs");
+  // Config path
+  const configPath = path.join(app.getPath("userData"), "deck.config.json");
   if (!fs.existsSync(configPath)) {
-    const defaultConfig = getResourcePath("deck.config.json");
-    if (fs.existsSync(defaultConfig)) fs.copyFileSync(defaultConfig, configPath);
+    const defaultConf = path.join(__dirname, "deck.config.json");
+    if (fs.existsSync(defaultConf)) fs.copyFileSync(defaultConf, configPath);
     else fs.writeFileSync(configPath, JSON.stringify({ actions: [] }, null, 2));
   }
 
-  // Start server
-  serverProcess = fork(serverPath, [], {
-    env: { ...process.env, PORT: String(PORT), CONFIG_PATH: configPath },
-    silent: true,
-  });
-  serverProcess.stdout?.on("data", (d) => console.log(`[server] ${d}`));
-  serverProcess.stderr?.on("data", (d) => console.error(`[server] ${d}`));
+  // Set env before requiring server/agent
+  process.env.PORT = String(PORT);
+  process.env.CONFIG_PATH = configPath;
+  process.env.SERVER_URL = `http://localhost:${PORT}`;
 
-  // Start agent
-  agentProcess = fork(agentPath, [], {
-    env: { ...process.env, SERVER_URL: `http://localhost:${PORT}` },
-    silent: true,
-  });
+  // Start server inline
+  require("./server.js");
+
+  // Start agent inline (delay to let server start)
+  setTimeout(() => require("./agent.js"), 1000);
 
   const ip = getLocalIP();
   const url = `http://${ip}:${PORT}`;
-  console.log(`Deck running at: ${url}`);
 
   // Window
   win = new BrowserWindow({
     width: 420,
-    height: 320,
+    height: 300,
     resizable: false,
     titleBarStyle: "hiddenInset",
     backgroundColor: "#09090b",
+    webPreferences: { nodeIntegration: false },
   });
 
-  win.loadURL(`data:text/html,
-    <body style="background:#09090b;color:#fafafa;font-family:-apple-system,system-ui,sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;margin:0;gap:12px">
-      <h2 style="font-size:18px;font-weight:600;margin:0">Deck is running</h2>
-      <p style="color:#71717a;font-size:13px;margin:0">Open on your tablet:</p>
-      <code style="background:#18181b;padding:10px 20px;border-radius:10px;font-size:15px;color:#a78bfa">${url}</code>
-      <p style="color:#52525b;font-size:11px;margin-top:8px">Config: ${configPath.replace(/'/g, "\\'")}</p>
-    </body>
-  `);
+  // Load the actual deck UI
+  setTimeout(() => {
+    win.loadURL(`http://localhost:${PORT}`);
+  }, 1500);
 
   // Tray
   try {
-    const trayIcon = app.isPackaged
-      ? path.join(process.resourcesPath, "app.asar", "build", "tray-icon.png")
-      : path.join(__dirname, "build", "tray-icon.png");
-    tray = new Tray(trayIcon);
-    tray.setToolTip("Deck");
-    tray.setContextMenu(Menu.buildFromTemplate([
-      { label: `Open: ${url}`, click: () => shell.openExternal(url) },
-      { type: "separator" },
-      { label: "Quit", click: () => app.quit() },
-    ]));
+    const trayIcon = path.join(__dirname, "build", "tray-icon.png");
+    if (fs.existsSync(trayIcon)) {
+      tray = new Tray(trayIcon);
+      tray.setToolTip("Deck");
+      tray.setContextMenu(Menu.buildFromTemplate([
+        { label: `Open in browser: ${url}`, click: () => shell.openExternal(url) },
+        { label: "Show window", click: () => win?.show() },
+        { type: "separator" },
+        { label: "Quit", click: () => app.quit() },
+      ]));
+    }
   } catch (e) {
-    console.log("Tray icon not available:", e.message);
+    console.log("Tray:", e.message);
   }
-});
 
-app.on("before-quit", () => {
-  if (serverProcess) serverProcess.kill();
-  if (agentProcess) agentProcess.kill();
+  console.log(`Deck running at: ${url}`);
 });
 
 app.on("window-all-closed", () => {
-  // Keep running in tray
+  // Keep running
 });
