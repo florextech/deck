@@ -691,7 +691,7 @@
       html += `<div style="display:flex;gap:8px"><button onclick="setLang('en')" style="flex:1;padding:10px;border-radius:10px;border:1px solid ${lang==='en'?'var(--accent)':'var(--glass-border)'};background:${lang==='en'?'var(--accent-soft)':'transparent'};color:${lang==='en'?'var(--accent)':'var(--text-dim)'};font-size:12px;font-weight:600;cursor:pointer">English</button><button onclick="setLang('es')" style="flex:1;padding:10px;border-radius:10px;border:1px solid ${lang==='es'?'var(--accent)':'var(--glass-border)'};background:${lang==='es'?'var(--accent-soft)':'transparent'};color:${lang==='es'?'var(--accent)':'var(--text-dim)'};font-size:12px;font-weight:600;cursor:pointer">Español</button></div>`;
       html += `<h4 style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;margin-top:16px">${t('sound')}</h4><div class="sound-toggle"><span>${t('notifSound')}</span><button class="toggle ${soundEnabled?'on':''}" onclick="toggleSound()"></button></div>`;
       html += `<h4 style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;margin-top:16px">Updates</h4><div id="update-section" style="font-size:12px;color:var(--text-dim)"></div>`;
-      html += `<h4 style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;margin-top:16px">Debug</h4><button id="show-logs-btn" style="padding:8px 14px;border-radius:8px;border:1px solid var(--glass-border);background:var(--glass);color:var(--text-dim);font-size:11px;cursor:pointer">${lang==='es'?'Ver logs':'Show logs'}</button><pre id="debug-logs" style="display:none;margin-top:8px;font-size:10px;color:var(--text-dim);background:var(--glass);border:1px solid var(--glass-border);border-radius:8px;padding:10px;max-height:200px;overflow:auto;white-space:pre-wrap;cursor:pointer" title="${lang==='es'?'Toca para copiar':'Tap to copy'}"></pre>`;
+      html += `<h4 style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;margin-top:16px">Debug</h4><div style="display:flex;gap:6px"><button id="show-logs-btn" style="padding:8px 14px;border-radius:8px;border:1px solid var(--glass-border);background:var(--glass);color:var(--text-dim);font-size:11px;cursor:pointer">${lang==='es'?'Ver logs':'Show logs'}</button><button id="copy-logs-btn" style="display:none;padding:8px 14px;border-radius:8px;border:1px solid var(--accent);background:var(--accent-soft);color:var(--accent);font-size:11px;cursor:pointer">${lang==='es'?'Copiar':'Copy'}</button></div><pre id="debug-logs" style="display:none;margin-top:8px;font-size:10px;color:var(--text-dim);background:var(--glass);border:1px solid var(--glass-border);border-radius:8px;padding:10px;max-height:150px;overflow:auto;white-space:pre-wrap;-webkit-overflow-scrolling:touch"></pre>`;
       html += `<p id="version-label" style="margin-top:16px;font-size:10px;color:var(--text-dim);text-align:center"></p>`;
       html += `</div>`;
       return html;
@@ -797,14 +797,15 @@
 
     function setupDebugBtn() {
       const btn = document.getElementById('show-logs-btn');
+      const copyBtn = document.getElementById('copy-logs-btn');
       const pre = document.getElementById('debug-logs');
-      if (!btn || !pre) return;
+      if (!btn || !pre || !copyBtn) return;
       btn.onclick = () => {
         if (pre.style.display === 'none') {
-          fetch('/logs').then(r=>r.json()).then(d => { pre.textContent = (d.logs||[]).join('\n') || 'No logs yet'; pre.style.display='block'; btn.textContent=lang==='es'?'Ocultar logs':'Hide logs'; }).catch(()=>{ pre.textContent='Could not load logs'; pre.style.display='block'; });
-        } else { pre.style.display='none'; btn.textContent=lang==='es'?'Ver logs':'Show logs'; }
+          fetch('/logs').then(r=>r.json()).then(d => { pre.textContent = (d.logs||[]).join('\n') || 'No logs yet'; pre.style.display='block'; copyBtn.style.display='inline-block'; btn.textContent=lang==='es'?'Ocultar':'Hide'; }).catch(()=>{ pre.textContent='Could not load logs'; pre.style.display='block'; });
+        } else { pre.style.display='none'; copyBtn.style.display='none'; btn.textContent=lang==='es'?'Ver logs':'Show logs'; }
       };
-      pre.onclick = () => { navigator.clipboard.writeText(pre.textContent).then(()=> addNotif(lang==='es'?'Logs copiados':'Logs copied','success')); };
+      copyBtn.onclick = () => { navigator.clipboard.writeText(pre.textContent).then(()=> addNotif(lang==='es'?'Logs copiados':'Logs copied','success')); };
     }
 
     function switchWorkspace(url) { connectTo(url); renderConfig(); }
