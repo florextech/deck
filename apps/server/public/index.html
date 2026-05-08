@@ -276,7 +276,7 @@
 
   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
-  <script src="https://cdn.jsdelivr.net/npm/qrious@4/dist/qrious.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
   <script>
     // ─── i18n ───
     const i18n = {
@@ -591,13 +591,17 @@
       el.innerHTML = html;
       lucide.createIcons();
       if (configTab === 'connect' && isHost) {
-        fetch(activeWorkspace + '/health').then(r=>r.json()).then(d => {
-          const canvas = document.getElementById('qr-canvas');
-          if (canvas && d.url) {
-            new QRious({ element: canvas, value: d.url, size: 200, backgroundAlpha: 0, foreground: '#ffffff' });
-            document.getElementById('qr-url').textContent = d.url;
-          }
-        }).catch(()=>{});
+        setTimeout(() => {
+          fetch('/health').then(r=>r.json()).then(d => {
+            const canvas = document.getElementById('qr-canvas');
+            const urlEl = document.getElementById('qr-url');
+            const url = d.url || location.origin;
+            if (canvas) {
+              try { new QRious({ element: canvas, value: url, size: 200, backgroundAlpha: 0, foreground: '#ffffff' }); } catch(e) { console.log('QR error', e); }
+            }
+            if (urlEl) urlEl.textContent = url;
+          }).catch(()=>{});
+        }, 100);
       }
     }
 
