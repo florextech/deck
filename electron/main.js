@@ -56,6 +56,9 @@ app.whenReady().then(() => {
   // Load the actual deck UI
   setTimeout(() => {
     win.loadURL(`http://localhost:${PORT}`);
+    win.webContents.on('did-finish-load', () => {
+      win.webContents.insertCSS('body { padding-top: 32px !important; } #status-bar { -webkit-app-region: drag; }');
+    });
   }, 1500);
 
   // Tray

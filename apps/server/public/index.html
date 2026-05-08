@@ -389,8 +389,9 @@
     let currentTheme = localStorage.getItem('deck-theme') || 'midnight';
     let configTab = 'actions';
 
-    // Role: host can edit actions. Determined by server.
-    let isHost = false;
+    // Role: host can edit actions.
+    // localhost/127.0.0.1 = always host. Remote IP = check server.
+    let isHost = (location.hostname === 'localhost' || location.hostname === '127.0.0.1');
 
     // Workspaces
     let workspaces = JSON.parse(localStorage.getItem('deck-workspaces') || '[]');
@@ -406,11 +407,12 @@
       renderGrid();
       renderNotifs();
 
-      // Check if host (always check against current page origin)
-      fetch(location.origin + '/health').then(r => r.json()).then(d => {
-        isHost = !!d.isLocal;
-        renderConfig();
-      }).catch(() => { isHost = false; });
+      // Also check via server if accessing from same machine IP
+      if (!isHost) {
+        fetch(location.origin + '/health').then(r => r.json()).then(d => {
+          if (d.isLocal) { isHost = true; renderConfig(); }
+        }).catch(() => {});
+      }
 
       socket = io(serverUrl, { transports: ['polling', 'websocket'] });
       socket.on('connect', () => addNotif(t('connected'), 'success'));
