@@ -782,7 +782,6 @@
     function checkForUpdates() {
       const el = document.getElementById('update-section');
       if (!el) return;
-      el.innerHTML = `<span style="color:var(--text-dim)">${lang==='es'?'Verificando...':'Checking...'}</span>`;
       fetch('/health').then(r=>r.json()).then(h => {
         const currentV = h.version || CURRENT_VERSION;
         const vLabel = document.getElementById('version-label');
@@ -792,9 +791,9 @@
           if (!latest || latest === currentV) {
             el.innerHTML = `<span style="color:var(--green)">v${currentV} ✓ ${lang==='es'?'Estás actualizado':'Up to date'}</span>`;
           } else {
-            el.innerHTML = `<span style="color:var(--accent)">v${latest} ${lang==='es'?'disponible':'available'} — <a href="https://github.com/${REPO}/releases/latest" target="_blank" style="color:var(--accent);text-decoration:underline">${lang==='es'?'Descargar':'Download'}</a></span>`;
+            el.innerHTML = `<span style="color:var(--accent)">v${latest} ${lang==='es'?'disponible — se actualizará automáticamente':'available — will update automatically'}</span>`;
           }
-        }).catch(() => { el.innerHTML = `<span style="color:var(--text-dim)">${lang==='es'?'No se pudo verificar':'Could not check'}</span>`; });
+        }).catch(() => { el.innerHTML = `<span style="color:var(--text-dim)">v${currentV}</span>`; });
       }).catch(() => { el.innerHTML = `<span style="color:var(--text-dim)">v${CURRENT_VERSION}</span>`; });
     }
 
