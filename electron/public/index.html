@@ -127,10 +127,10 @@
     /* Settings section in config */
     .settings-section { margin-top:16px; padding-top:16px; border-top:1px solid var(--glass-border); }
     .settings-section h4 { font-size:11px; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:10px; }
-    .theme-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:12px; }
-    .theme-btn { width:100%; aspect-ratio:1; border-radius:10px; border:2px solid var(--glass-border); cursor:pointer; position:relative; transition:border-color .2s; }
-    .theme-btn.active { border-color:var(--accent); }
-    .theme-btn::after { content:attr(data-name); position:absolute; bottom:-14px; left:50%; transform:translateX(-50%); font-size:8px; color:var(--text-dim); white-space:nowrap; }
+    .theme-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:12px; }
+    .theme-btn { width:100%; aspect-ratio:1.4; border-radius:12px; border:2px solid transparent; cursor:pointer; position:relative; transition:border-color .2s,transform .15s; display:flex; align-items:flex-end; justify-content:center; padding-bottom:6px; }
+    .theme-btn.active { border-color:var(--text); transform:scale(1.05); }
+    .theme-btn span { font-size:9px; font-weight:600; color:#fff; text-shadow:0 1px 3px rgba(0,0,0,0.6); }
     .sound-toggle { display:flex; align-items:center; gap:10px; padding:10px 0; }
     .sound-toggle span { font-size:13px; flex:1; }
     .toggle { width:44px; height:24px; border-radius:12px; background:var(--glass-border); cursor:pointer; position:relative; transition:background .2s; border:none; }
@@ -373,10 +373,10 @@
       // Workspaces
       html += `<h4 style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px">Workspaces</h4>`;
       html += workspaces.map(w => `<div class="config-item" style="cursor:pointer;${w.url===activeWorkspace?'border-color:var(--accent);background:var(--accent-soft)':''}" onclick="switchWorkspace('${w.url}')"><div style="width:8px;height:8px;border-radius:50%;background:${w.url===activeWorkspace?'var(--green)':'var(--text-dim)'};flex-shrink:0"></div><div class="info"><p>${w.name}</p><small>${w.url}</small></div><button class="del" onclick="event.stopPropagation();removeWorkspace('${w.url}')">×</button></div>`).join('');
-      html += `<button class="add-btn" onclick="scanForHosts()" style="margin-top:8px;padding:12px" id="scan-btn">🔍 Scan for PCs</button>`;
+      html += `<button class="add-btn" onclick="addWorkspaceManual()" style="margin-top:8px;padding:12px">+ Add PC</button>`;
       // Theme
       html += `<h4 style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;margin-top:20px">Theme</h4><div class="theme-grid">`;
-      html += themes.map(t => `<button class="theme-btn ${currentTheme===t.id?'active':''}" style="background:${t.color}" data-name="${t.name}" onclick="setTheme('${t.id}')"></button>`).join('');
+      html += themes.map(t => `<button class="theme-btn ${currentTheme===t.id?'active':''}" style="background:${t.color}" onclick="setTheme('${t.id}')"><span>${t.name}</span></button>`).join('');
       html += `</div><h4 style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;margin-top:16px">Sound</h4><div class="sound-toggle"><span>Notification sound</span><button class="toggle ${soundEnabled?'on':''}" onclick="toggleSound()"></button></div></div>`;
       return html;
     }
@@ -389,58 +389,15 @@
       if (activeWorkspace === url) connectTo(workspaces[0].url);
       renderConfig();
     }
-    function addWorkspacePrompt() {
-      const name = prompt('Workspace name (e.g. Work PC)');
+    function addWorkspaceManual() {
+      const name = prompt('Name (e.g. Work PC)');
       if (!name) return;
-      const url = prompt('Server URL (e.g. http://192.168.1.50:4000)');
-      if (!url) return;
+      const ip = prompt('IP address (e.g. 192.168.1.50)');
+      if (!ip) return;
+      const url = ip.includes('://') ? ip : `http://${ip}:4000`;
       workspaces.push({ name, url });
       localStorage.setItem('deck-workspaces', JSON.stringify(workspaces));
       renderConfig();
-    }
-
-    async function scanForHosts() {
-      const btn = document.getElementById('scan-btn');
-      btn.textContent = 'Scanning...';
-      btn.style.opacity = '0.5';
-
-      // Get subnet from current connection
-      const parts = location.hostname.split('.');
-      const subnet = parts.slice(0, 3).join('.');
-      const found = [];
-
-      // Scan common IPs on port 4000
-      const promises = [];
-      for (let i = 1; i <= 254; i++) {
-        const ip = `${subnet}.${i}`;
-        const url = `http://${ip}:4000`;
-        if (workspaces.find(w => w.url === url)) continue;
-        promises.push(
-          fetch(`${url}/health`, { signal: AbortSignal.timeout(1500) })
-            .then(r => r.json())
-            .then(data => { if (data.status === 'ok') found.push({ ip, url, actions: data.actions }); })
-            .catch(() => {})
-        );
-      }
-
-      await Promise.all(promises);
-
-      if (found.length === 0) {
-        btn.textContent = 'No new PCs found';
-        setTimeout(() => { btn.textContent = '🔍 Scan for PCs'; btn.style.opacity = '1'; }, 2000);
-        return;
-      }
-
-      // Add found hosts
-      for (const h of found) {
-        const name = prompt(`Found Deck at ${h.ip} (${h.actions} actions). Name it:`, h.ip);
-        if (!name) continue;
-        workspaces.push({ name, url: h.url });
-      }
-      localStorage.setItem('deck-workspaces', JSON.stringify(workspaces));
-      btn.textContent = `Found ${found.length} PC(s)!`;
-      btn.style.opacity = '1';
-      setTimeout(() => renderConfig(), 1000);
     }
 
     function setTheme(id) { currentTheme = id; document.documentElement.dataset.theme = id; localStorage.setItem('deck-theme', id); renderConfig(); }
