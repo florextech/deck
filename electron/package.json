@@ -17,7 +17,11 @@
   "build": {
     "appId": "com.deck.app",
     "productName": "Deck",
-    "publish": null,
+    "publish": {
+      "provider": "github",
+      "owner": "florextech",
+      "repo": "deck"
+    },
     "files": [
       "main.js",
       "agent.js",
@@ -50,6 +54,7 @@
   },
   "dependencies": {
     "cors": "2.8.5",
+    "electron-updater": "^6.8.3",
     "express": "4.21.2",
     "qrcode": "^1.5.4",
     "qrcode-terminal": "0.12.0",

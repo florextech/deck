@@ -1,4 +1,5 @@
-const { app, BrowserWindow, Tray, Menu, shell } = require("electron");
+const { app, BrowserWindow, Tray, Menu, shell, dialog } = require("electron");
+const { autoUpdater } = require("electron-updater");
 const { networkInterfaces } = require("os");
 const path = require("path");
 const fs = require("fs");
@@ -79,6 +80,21 @@ app.whenReady().then(() => {
   }
 
   console.log(`Deck running at: ${url}`);
+
+  // Auto-update (silent check, ask before install)
+  autoUpdater.autoDownload = true;
+  autoUpdater.autoInstallOnAppQuit = true;
+  autoUpdater.on('update-downloaded', (info) => {
+    dialog.showMessageBox(win, {
+      type: 'info',
+      title: 'Update ready',
+      message: `v${info.version} downloaded. Restart to update?`,
+      buttons: ['Restart', 'Later'],
+    }).then((result) => {
+      if (result.response === 0) autoUpdater.quitAndInstall();
+    });
+  });
+  autoUpdater.checkForUpdates().catch(() => {});
 });
 
 app.on("window-all-closed", () => {
