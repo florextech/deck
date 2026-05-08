@@ -84,6 +84,11 @@
       font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', system-ui, sans-serif;
       height: 100dvh; display: flex; flex-direction: column; overflow: hidden;
       user-select: none; -webkit-tap-highlight-color: transparent; -webkit-font-smoothing: antialiased;
+      padding-top: env(titlebar-area-height, 0px);
+    }
+    /* macOS Electron titlebar space */
+    @media (display-mode: standalone), (display-mode: window-controls-overlay) {
+      body { padding-top: 28px; }
     }
     body::before, body::after { content:''; position:fixed; border-radius:50%; pointer-events:none; z-index:0; }
     body::before { width:50vw; height:50vw; top:-20%; left:-15%; background:radial-gradient(circle, var(--orb1), transparent 70%); filter:blur(60px); }
@@ -401,8 +406,8 @@
       renderGrid();
       renderNotifs();
 
-      // Check if host
-      fetch(serverUrl + '/health').then(r => r.json()).then(d => {
+      // Check if host (always check against current page origin)
+      fetch(location.origin + '/health').then(r => r.json()).then(d => {
         isHost = !!d.isLocal;
         renderConfig();
       }).catch(() => { isHost = false; });

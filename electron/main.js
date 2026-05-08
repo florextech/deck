@@ -48,6 +48,7 @@ app.whenReady().then(() => {
     minHeight: 500,
     resizable: true,
     titleBarStyle: "hiddenInset",
+    trafficLightPosition: { x: 12, y: 12 },
     backgroundColor: "#09090b",
     webPreferences: { nodeIntegration: false },
   });
