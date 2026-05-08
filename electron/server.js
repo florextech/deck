@@ -41,7 +41,22 @@ io.on("connection", (socket) => {
   });
 });
 
-app.get("/health", (_, res) => res.json({ status: "ok", agent: !!agentSocket, actions: actions.length }));
+app.get("/health", (req, res) => {
+  const { networkInterfaces } = require("os");
+  const localIps = Object.values(networkInterfaces()).flat().filter(n => n && n.family === "IPv4" && !n.internal).map(n => n.address);
+  const ip = localIps[0] || "localhost";
+  const remoteIp = (req.ip || req.socket.remoteAddress || "").replace("::ffff:", "");
+  const isLocal = remoteIp === "127.0.0.1" || remoteIp === "::1" || localIps.includes(remoteIp);
+  res.json({ status: "ok", agent: !!agentSocket, actions: actions.length, isLocal, url: `http://${ip}:${PORT}` });
+});
+app.get("/qr", async (_, res) => {
+  const { networkInterfaces } = require("os");
+  const QRCode = require("qrcode");
+  const localIps = Object.values(networkInterfaces()).flat().filter(n => n && n.family === "IPv4" && !n.internal).map(n => n.address);
+  const ip = localIps[0] || "localhost";
+  const svg = await QRCode.toString(`http://${ip}:${PORT}`, { type: "svg", margin: 1, color: { dark: "#ffffff", light: "#00000000" } });
+  res.type("svg").send(svg);
+});
 app.get("/apps", (_, res) => {
   if (!agentSocket) return res.json({ apps: [] });
   const timeout = setTimeout(() => res.json({ apps: [] }), 3000);
