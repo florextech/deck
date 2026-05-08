@@ -276,7 +276,7 @@
 
   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
-  <script src="https://cdn.jsdelivr.net/npm/qrcode@1/build/qrcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrious@4/dist/qrious.min.js"></script>
   <script>
     // ─── i18n ───
     const i18n = {
@@ -572,7 +572,7 @@
         html += `</div>`;
 
         if (configTab === 'actions') {
-          html += `<button class="add-btn" onclick="openModal()">+ ${t('addAction')}</button>`;
+          html += `<button class="add-btn" onclick="openModal()">${t('addAction')}</button>`;
           html += actions.map(a => {
             const iconHtml = a.icon && a.icon.startsWith('http') ? `<img src="${a.icon}" style="width:20px;height:20px;border-radius:4px">` : `<i data-lucide="${{url:'globe',copy:'clipboard',command:'terminal'}[a.type]||'zap'}" style="width:18px;height:18px;color:var(--accent)"></i>`;
             return `<div class="config-item">${iconHtml}<div class="info"><p>${a.label}</p><small>${a.type}</small></div><button class="del" onclick="del('${a.id}')">×</button></div>`;
@@ -593,7 +593,10 @@
       if (configTab === 'connect' && isHost) {
         fetch(activeWorkspace + '/health').then(r=>r.json()).then(d => {
           const canvas = document.getElementById('qr-canvas');
-          if (canvas && d.url) { QRCode.toCanvas(canvas, d.url, { width: 200, margin: 2, color: { dark: '#ffffff', light: '#00000000' } }); document.getElementById('qr-url').textContent = d.url; }
+          if (canvas && d.url) {
+            new QRious({ element: canvas, value: d.url, size: 200, backgroundAlpha: 0, foreground: '#ffffff' });
+            document.getElementById('qr-url').textContent = d.url;
+          }
         }).catch(()=>{});
       }
     }
@@ -601,9 +604,13 @@
     function renderSettings() {
       const themes = [{id:'midnight',color:'#a78bfa',name:'Midnight'},{id:'ocean',color:'#38bdf8',name:'Ocean'},{id:'ember',color:'#fb923c',name:'Ember'},{id:'forest',color:'#4ade80',name:'Forest'},{id:'rose',color:'#f472b6',name:'Rose'},{id:'ice',color:'#67e8f9',name:'Ice'},{id:'gold',color:'#fbbf24',name:'Gold'},{id:'crimson',color:'#f43f5e',name:'Crimson'}];
       let html = `<div style="border:none;margin:0;padding:0">`;
-      html += `<h4 style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px">${t('workspaces')}</h4>`;
-      html += workspaces.map(w => `<div class="config-item" style="cursor:pointer;${w.url===activeWorkspace?'border-color:var(--accent);background:var(--accent-soft)':''}" onclick="switchWorkspace('${w.url}')"><div style="width:8px;height:8px;border-radius:50%;background:${w.url===activeWorkspace?'var(--green)':'var(--text-dim)'};flex-shrink:0"></div><div class="info"><p>${w.name}</p><small>${w.url}</small></div><button class="del" onclick="event.stopPropagation();removeWorkspace('${w.url}')">×</button></div>`).join('');
-      html += `<div style="display:flex;gap:8px;margin-top:8px"><button class="add-btn" onclick="scanForHosts()" style="flex:1;margin:0;padding:12px" id="scan-btn"><i data-lucide="radar" style="width:14px;height:14px;display:inline;vertical-align:middle;margin-right:4px"></i> ${t('scan')}</button><button class="add-btn" onclick="addWorkspaceManual()" style="flex:1;margin:0;padding:12px"><i data-lucide="plus" style="width:14px;height:14px;display:inline;vertical-align:middle;margin-right:4px"></i> ${t('manual')}</button></div>`;
+      // Workspaces only for tablet (not host)
+      if (!isHost) {
+        html += `<h4 style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px">${t('workspaces')}</h4>`;
+        html += workspaces.map(w => `<div class="config-item" style="cursor:pointer;${w.url===activeWorkspace?'border-color:var(--accent);background:var(--accent-soft)':''}" onclick="switchWorkspace('${w.url}')"><div style="width:8px;height:8px;border-radius:50%;background:${w.url===activeWorkspace?'var(--green)':'var(--text-dim)'};flex-shrink:0"></div><div class="info"><p>${w.name}</p><small>${w.url}</small></div><button class="del" onclick="event.stopPropagation();removeWorkspace('${w.url}')">×</button></div>`).join('');
+        html += `<div style="display:flex;gap:8px;margin-top:8px"><button class="add-btn" onclick="scanForHosts()" style="flex:1;margin:0;padding:12px" id="scan-btn"><i data-lucide="radar" style="width:14px;height:14px;display:inline;vertical-align:middle;margin-right:4px"></i> ${t('scan')}</button><button class="add-btn" onclick="addWorkspaceManual()" style="flex:1;margin:0;padding:12px"><i data-lucide="plus" style="width:14px;height:14px;display:inline;vertical-align:middle;margin-right:4px"></i> ${t('manual')}</button></div>`;
+        html += `<div style="margin-top:20px"></div>`;
+      }
       html += `<h4 style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;margin-top:20px">${t('theme')}</h4><div class="theme-grid">`;
       html += themes.map(th => `<button class="theme-btn ${currentTheme===th.id?'active':''}" style="background:${th.color}" onclick="setTheme('${th.id}')"><span>${th.name}</span></button>`).join('');
       html += `</div>`;
