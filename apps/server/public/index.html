@@ -605,7 +605,7 @@
         html += `<div style="display:flex;gap:4px;margin-bottom:12px;overflow-x:auto">`;
         html += `<button onclick="configTab='actions';renderConfig()" style="flex:1;padding:10px;border-radius:10px;border:1px solid ${configTab==='actions'?'var(--accent)':'var(--glass-border)'};background:${configTab==='actions'?'var(--accent-soft)':'transparent'};color:${configTab==='actions'?'var(--accent)':'var(--text-dim)'};font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap">${t('actions')}</button>`;
         html += `<button onclick="configTab='plugins';renderConfig()" style="flex:1;padding:10px;border-radius:10px;border:1px solid ${configTab==='plugins'?'var(--accent)':'var(--glass-border)'};background:${configTab==='plugins'?'var(--accent-soft)':'transparent'};color:${configTab==='plugins'?'var(--accent)':'var(--text-dim)'};font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap">Plugins</button>`;
-        html += `<button onclick="configTab='connect';renderConfig()" style="flex:1;padding:10px;border-radius:10px;border:1px solid ${configTab==='connect'?'var(--accent)':'var(--glass-border)'};background:${configTab==='connect'?'var(--accent-soft)':'transparent'};color:${configTab==='connect'?'var(--accent)':'var(--text-dim)'};font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap">Connect</button>`;
+        html += `<button onclick="configTab='connect';renderConfig()" style="flex:1;padding:10px;border-radius:10px;border:1px solid ${configTab==='connect'?'var(--accent)':'var(--glass-border)'};background:${configTab==='connect'?'var(--accent-soft)':'transparent'};color:${configTab==='connect'?'var(--accent)':'var(--text-dim)'};font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap">${lang==='es'?'Conectar':'Connect'}</button>`;
         html += `<button onclick="configTab='settings';renderConfig()" style="flex:1;padding:10px;border-radius:10px;border:1px solid ${configTab==='settings'?'var(--accent)':'var(--glass-border)'};background:${configTab==='settings'?'var(--accent-soft)':'transparent'};color:${configTab==='settings'?'var(--accent)':'var(--text-dim)'};font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap">${t('settings')}</button>`;
         html += `</div>`;
 
@@ -664,11 +664,12 @@
 
     function renderMd(text) {
       return text
-        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-        .replace(/`(.+?)`/g, '<code style="background:var(--glass-border);padding:1px 4px;border-radius:3px">$1</code>')
-        .replace(/^### (.+)$/gm, '<strong style="display:block;margin-top:8px">$1</strong>')
-        .replace(/^## (.+)$/gm, '<strong style="display:block;margin-top:8px;font-size:12px">$1</strong>')
-        .replace(/^- (.+)$/gm, '<span style="display:block;padding-left:8px">• $1</span>')
+        .replace(/\*\*(.+?)\*\*/g, '<strong style="color:var(--text)">$1</strong>')
+        .replace(/`(.+?)`/g, '<code style="background:var(--glass-border);padding:2px 6px;border-radius:4px;color:var(--accent)">$1</code>')
+        .replace(/^### (.+)$/gm, '<div style="margin-top:10px;font-weight:600;color:var(--text);font-size:12px">$1</div>')
+        .replace(/^## (.+)$/gm, '<div style="margin-top:10px;font-weight:600;color:var(--text);font-size:13px">$1</div>')
+        .replace(/^- (.+)$/gm, '<div style="padding-left:10px;color:var(--text)">• $1</div>')
+        .replace(/\n\n/g, '<div style="height:8px"></div>')
         .replace(/\n/g, '<br>');
     }
 
