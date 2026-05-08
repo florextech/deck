@@ -230,15 +230,26 @@ function currentPlatform(): string {
 }
 
 app.get("/plugins/store", async (_req, res) => {
+  const pluginsDir = resolve(CONFIG_PATH, "../plugins");
+  const installed = existsSync(pluginsDir) ? readdirSync(pluginsDir).filter(f => f.endsWith(".js")).map(f => f.replace(".js", "")) : [];
+  const state = loadPluginsState();
+  const platform = currentPlatform();
   try {
     const r = await fetch(REGISTRY_URL);
     const data = await r.json() as { plugins: unknown[] };
-    const pluginsDir = resolve(CONFIG_PATH, "../plugins");
-    const installed = existsSync(pluginsDir) ? readdirSync(pluginsDir).filter(f => f.endsWith(".js")).map(f => f.replace(".js", "")) : [];
-    const state = loadPluginsState();
-    const platform = currentPlatform();
-    res.json({ plugins: (data.plugins as Array<{ id: string; platforms?: string[] }>).map(p => ({ ...p, installed: installed.includes(p.id), disabled: !!state[p.id]?.disabled, currentPlatform: platform })) });
-  } catch { res.json({ plugins: [] }); }
+    const plugins = (data.plugins as Array<{ id: string; platforms?: string[] }>).map(p => ({ ...p, installed: installed.includes(p.id), disabled: !!state[p.id]?.disabled, currentPlatform: platform }));
+    // Add local-only plugins not in registry
+    for (const id of installed) {
+      if (!plugins.find(p => p.id === id)) {
+        plugins.push({ id, name: id, description: "Installed locally", installed: true, disabled: !!state[id]?.disabled, currentPlatform: platform } as never);
+      }
+    }
+    res.json({ plugins });
+  } catch {
+    // Fallback: show installed plugins even if registry is unreachable
+    const plugins = installed.map(id => ({ id, name: id, description: "Installed locally", installed: true, disabled: !!state[id]?.disabled, currentPlatform: platform }));
+    res.json({ plugins, offline: true });
+  }
 });
 
 app.post("/plugins/toggle", (req, res) => {
@@ -277,7 +288,7 @@ app.post("/plugins/install", async (req, res) => {
     const pluginsDir = resolve(CONFIG_PATH, "../plugins");
     if (!existsSync(pluginsDir)) { mkdirSync(pluginsDir, { recursive: true }); }
     writeFileSync(resolve(pluginsDir, `${id}.js`), code);
-    res.json({ ok: true, message: "Restart to activate" });
+    res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: (e as Error).message }); }
 });
 

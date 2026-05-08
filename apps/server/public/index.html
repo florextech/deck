@@ -771,7 +771,7 @@
     function uninstallPlugin(id) {
       fetch('/plugins/uninstall', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({id}) })
         .then(r => r.json())
-        .then(d => { if (d.ok) { addNotif(lang==='es'?'Plugin eliminado. Reinicia para aplicar.':'Plugin removed. Restart to apply.', 'success'); loadPluginStore(); } else { addNotif(d.error || 'Error', 'error'); } })
+        .then(d => { if (d.ok) { addNotif(lang==='es'?'Plugin eliminado.':'Plugin removed.', 'success'); loadPluginStore(); } else { addNotif(d.error || 'Error', 'error'); } })
         .catch(() => addNotif('Uninstall failed', 'error'));
     }
 
@@ -788,7 +788,7 @@
         if (latest === CURRENT_VERSION) {
           el.innerHTML = `<span style="color:var(--green)">v${CURRENT_VERSION} ✓ ${lang==='es'?'Estás actualizado':'Up to date'}</span>`;
         } else {
-          el.innerHTML = `<span style="color:var(--accent)">v${latest} ${lang==='es'?'disponible. Reinicia la app para actualizar.':'available. Restart app to update.'}</span>`;
+          el.innerHTML = `<span style="color:var(--accent)">v${latest} ${lang==='es'?'disponible':'available'} — <a href="https://github.com/${REPO}/releases/latest" target="_blank" style="color:var(--accent);text-decoration:underline">${lang==='es'?'Descargar':'Download'}</a></span>`;
         }
       }).catch(() => { el.innerHTML = `<span style="color:var(--text-dim)">${lang==='es'?'No se pudo verificar':'Could not check'}</span>`; });
     }
