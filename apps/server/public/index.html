@@ -671,7 +671,7 @@
         if (latest === CURRENT_VERSION) {
           el.innerHTML = `<span style="color:var(--green)">v${CURRENT_VERSION} ✓ ${lang==='es'?'Estás actualizado':'Up to date'}</span>`;
         } else {
-          el.innerHTML = `<div style="display:flex;flex-direction:column;gap:8px"><span style="color:var(--accent)">v${latest} ${lang==='es'?'disponible':'available'} (${lang==='es'?'tienes':'current'} v${CURRENT_VERSION})</span><a href="https://github.com/${REPO}/releases/latest" target="_blank" style="display:inline-block;padding:10px 16px;border-radius:10px;background:var(--accent-soft);color:var(--accent);font-weight:600;font-size:12px;text-decoration:none;text-align:center">${lang==='es'?'Descargar actualización':'Download update'}</a></div>`;
+          el.innerHTML = `<span style="color:var(--accent)">v${latest} ${lang==='es'?'disponible. Reinicia la app para actualizar.':'available. Restart app to update.'}</span>`;
         }
       }).catch(() => { el.innerHTML = `<span style="color:var(--text-dim)">${lang==='es'?'No se pudo verificar':'Could not check'}</span>`; });
     }
