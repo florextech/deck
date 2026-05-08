@@ -1,7 +1,7 @@
 {
   "name": "open-deck",
   "private": true,
-  "version": "0.6.0",
+  "version": "0.6.2",
   "description": "AI Command Center — Open Deck by Florex Labs",
   "scripts": {
     "dev": "tsx scripts/qr.ts && concurrently -n server,agent -c blue,magenta \"pnpm dev:server\" \"pnpm dev:agent\"",

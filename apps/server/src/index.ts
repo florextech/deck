@@ -103,7 +103,7 @@ app.get("/health", (req, res) => {
   const localIps = Object.values(networkInterfaces()).flat().filter(n => n && n.family === "IPv4" && !n.internal).map(n => n!.address);
   const isLocal = remoteIp === "127.0.0.1" || remoteIp === "::1" || localIps.includes(remoteIp);
   const ip = localIps[0] ?? "localhost";
-  res.json({ status: "ok", agent: !!agentSocket, actions: actions.length, isLocal, url: `http://${ip}:${PORT}`, version: process.env.npm_package_version ?? "0.2.0" });
+  res.json({ status: "ok", agent: !!agentSocket, actions: actions.length, isLocal, url: `http://${ip}:${PORT}`, version: process.env.npm_package_version ?? "0.6.1" });
 });
 
 app.get("/qr", async (_req, res) => {
@@ -235,7 +235,7 @@ app.get("/plugins/store", async (_req, res) => {
   const state = loadPluginsState();
   const platform = currentPlatform();
   try {
-    const r = await fetch(REGISTRY_URL);
+    const r = await fetch(REGISTRY_URL, { signal: AbortSignal.timeout(5000) });
     const data = await r.json() as { plugins: unknown[] };
     const plugins = (data.plugins as Array<{ id: string; platforms?: string[] }>).map(p => ({ ...p, installed: installed.includes(p.id), disabled: !!state[p.id]?.disabled, currentPlatform: platform }));
     // Add local-only plugins not in registry
