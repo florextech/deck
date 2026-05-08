@@ -4,7 +4,7 @@ import { writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import qrcode from "qrcode-terminal";
 
-const PORT = 4000;
+const BASE_PORT = 4000;
 
 function getLocalIP(): string {
   const nets = networkInterfaces();
@@ -21,16 +21,16 @@ function getLocalIP(): string {
 }
 
 const ip = getLocalIP();
-const url = `http://${ip}:${PORT}`;
+const url = `http://${ip}:${BASE_PORT}`;
 
-// Auto-generate .env.local so the tablet connects to the right server
-writeFileSync(resolve(process.cwd(), "apps/web/.env.local"), `NEXT_PUBLIC_SERVER_URL=http://${ip}:4000\n`);
+writeFileSync(resolve(process.cwd(), "apps/web/.env.local"), `NEXT_PUBLIC_SERVER_URL=http://${ip}:${BASE_PORT}\n`);
 
 console.log("\n");
 console.log("  ┌─────────────────────────────────────┐");
-console.log("  │         📱 OPEN DECK                 │");
+console.log("  │           DECK                       │");
 console.log("  │   Scan with your phone or tablet:    │");
 console.log("  └─────────────────────────────────────┘");
 console.log("");
 qrcode.generate(url, { small: true });
-console.log(`\n  → ${url}\n`);
+console.log(`\n  → ${url}`);
+console.log(`  If port 4000 is busy, check terminal for actual port.\n`);

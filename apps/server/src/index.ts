@@ -131,3 +131,13 @@ httpServer.listen(PORT, "0.0.0.0", () => {
   console.log(`[deck] Server on http://localhost:${PORT}`);
   console.log(`[deck] Config: ${CONFIG_PATH} (${actions.length} actions)`);
 });
+
+httpServer.on("error", (err: NodeJS.ErrnoException) => {
+  if (err.code === "EADDRINUSE") {
+    const next = PORT + 1;
+    console.log(`[deck] Port ${PORT} in use, trying ${next}...`);
+    httpServer.listen(next, "0.0.0.0", () => {
+      console.log(`[deck] Server on http://localhost:${next}`);
+    });
+  }
+});
