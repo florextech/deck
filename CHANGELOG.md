@@ -1,5 +1,27 @@
 # Changelog
 
+## v0.2.0 (2026-05-07)
+
+### Features
+- QR code in Connect tab for easy tablet pairing
+- Auto-update checker in Settings (checks GitHub releases)
+- Docker image published to ghcr.io on release
+- Execution feedback (green/red flash on tiles)
+- Confirmation dialog for dangerous actions
+- Categories with horizontal filter tabs
+- Drag & drop reorder (host only)
+- i18n: English and Español with all strings translated
+- 8 themes (Midnight, Ocean, Ember, Forest, Rose, Ice, Gold, Crimson)
+- Multi-workspace support (connect tablet to multiple PCs)
+- Network scan to discover Deck instances
+- Role-based: PC configures, tablet only executes
+
+### Fixes
+- macOS Electron titlebar padding
+- Host detection (localhost always = host)
+- Port fallback if 4000 is busy
+- QR generated server-side (no client-side lib issues)
+
 ## v0.1.0 (2026-05-07)
 
 ### Features
